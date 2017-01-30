@@ -47,6 +47,6 @@ public class Server implements ServerInterface {
 	 */
 	@Override
 	public int execute(Byte[] a0, Byte[] a1) throws RemoteException {
-		return 5+5;
+		return a0.length + a1.length;
 	}
 }

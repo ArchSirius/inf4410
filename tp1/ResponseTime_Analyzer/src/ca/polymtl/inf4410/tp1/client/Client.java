@@ -5,26 +5,29 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.Arrays;
 
 import ca.polymtl.inf4410.tp1.shared.ServerInterface;
 
 public class Client {
 	public static void main(String[] args) {
 		String distantHostname = null;
-		int eOctet = 0;
+		int eOctets = 0;
 
 		if (args.length > 0) {
 			distantHostname = args[0];
-			eOctet = args[1];
+			eOctets = Integer.parseInt(args[1]);
 		}
 
-		if (eAppel < 1 || eAppel > 7) {
+		if (eOctets < 1 || eOctets > 7) {
 			throw new IllegalArgumentException("Le nombre d'octets doit etre entre 10^1 et 10^7");
 		}
-		int nOctets = Math.pow(10, eOctets);
+		Double nOctets = Math.pow(10, eOctets);
+		Byte[] payload = new Byte[nOctets.intValue()];
+		Arrays.fill(payload, 42);
 
 		Client client = new Client(distantHostname);
-		client.run();
+		client.run(payload);
 	}
 
 	FakeServer localServer = null; // Pour tester la latence d'un appel de
@@ -47,15 +50,15 @@ public class Client {
 		}
 	}
 
-	private void run() {
-		appelNormal();
+	private void run(Byte[] payload) {
+		appelNormal(payload);
 
 		if (localServerStub != null) {
-			appelRMILocal();
+			appelRMILocal(payload);
 		}
 
 		if (distantServerStub != null) {
-			appelRMIDistant();
+			appelRMIDistant(payload);
 		}
 	}
 
@@ -77,9 +80,9 @@ public class Client {
 		return stub;
 	}
 
-	private void appelNormal() {
+	private void appelNormal(Byte[] payload) {
 		long start = System.nanoTime();
-		int result = localServer.execute(4, 7);
+		int result = localServer.execute(payload, payload);
 		long end = System.nanoTime();
 
 		System.out.println("Temps écoulé appel normal: " + (end - start)
@@ -87,10 +90,10 @@ public class Client {
 		System.out.println("Résultat appel normal: " + result);
 	}
 
-	private void appelRMILocal() {
+	private void appelRMILocal(Byte[] payload) {
 		try {
 			long start = System.nanoTime();
-			int result = localServerStub.execute(4, 7);
+			int result = localServerStub.execute(payload, payload);
 			long end = System.nanoTime();
 
 			System.out.println("Temps écoulé appel RMI local: " + (end - start)
@@ -101,10 +104,10 @@ public class Client {
 		}
 	}
 
-	private void appelRMIDistant() {
+	private void appelRMIDistant(Byte[] payload) {
 		try {
 			long start = System.nanoTime();
-			int result = distantServerStub.execute(4, 7);
+			int result = distantServerStub.execute(payload, payload);
 			long end = System.nanoTime();
 
 			System.out.println("Temps écoulé appel RMI distant: "
