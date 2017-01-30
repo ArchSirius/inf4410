@@ -11,10 +11,17 @@ import ca.polymtl.inf4410.tp1.shared.ServerInterface;
 public class Client {
 	public static void main(String[] args) {
 		String distantHostname = null;
+		int eOctet = 0;
 
 		if (args.length > 0) {
 			distantHostname = args[0];
+			eOctet = args[1];
 		}
+
+		if (eAppel < 1 || eAppel > 7) {
+			throw new IllegalArgumentException("Le nombre d'octets doit etre entre 10^1 et 10^7");
+		}
+		int nOctets = Math.pow(10, eOctets);
 
 		Client client = new Client(distantHostname);
 		client.run();

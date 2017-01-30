@@ -4,5 +4,5 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 public interface ServerInterface extends Remote {
-	int execute(int a, int b) throws RemoteException;
+	int execute(Byte[] a1, Byte[] a2) throws RemoteException;
 }

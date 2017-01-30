@@ -46,7 +46,7 @@ public class Server implements ServerInterface {
 	 * paramètre.
 	 */
 	@Override
-	public int execute(int a, int b) throws RemoteException {
-		return a + b;
+	public int execute(Byte[] a0, Byte[] a1) throws RemoteException {
+		return 5+5;
 	}
 }
