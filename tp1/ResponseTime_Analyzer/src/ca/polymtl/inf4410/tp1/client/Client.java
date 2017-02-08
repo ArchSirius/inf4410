@@ -24,7 +24,6 @@ public class Client {
 		}
 		Double nOctets = Math.pow(10, eOctets);
 		Byte[] payload = new Byte[nOctets.intValue()];
-		Arrays.fill(payload, '4');
 
 		Client client = new Client(distantHostname);
 		client.run(payload);
