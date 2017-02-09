@@ -71,7 +71,10 @@ public class Client {
 	 * @param nom - Le nom du fichier.
 	 */
 	private void create(String name) {
-		if (name == null) return
+		if (name == null) {
+			System.out.println("Vous devez specifier un nom de fichier");
+			return;
+		}
 		try {
 			if(distantServerStub.create(name)) {
 				System.out.println(name.concat(" ajouté."));
@@ -123,7 +126,7 @@ public class Client {
 	private void get(String name) {
 		if (name == null) {
 			System.out.println("Vous devez specifier un nom de fichier");
-			return
+			return;
 		}
 		try {
 			byte[] checksum = getFileChecksum(name);
@@ -147,7 +150,7 @@ public class Client {
 	private void lock(String name) {
 		if (name == null) {
 			System.out.println("Vous devez specifier un nom de fichier");
-			return
+			return;
 		}
 		try {
 			byte[] checksum = getFileChecksum(name);
@@ -177,7 +180,7 @@ public class Client {
 	private void push(String name) {
 		if (name == null) {
 			System.out.println("Vous devez specifier un nom de fichier");
-			return
+			return;
 		}
 		try {
 			byte[] data;
