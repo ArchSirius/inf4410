@@ -233,21 +233,6 @@ public class Client {
 	public Client(String distantServerHostname) {
 		super();
 
-		fnList = new HashMap<String, ServerOperation>();
-			ServerOperation create = (arg) -> create(arg);
-			ServerOperation list = (arg) -> list();
-			ServerOperation syncLocalDir = (arg) -> syncLocalDir();
-			ServerOperation get = (arg) -> get(arg);
-			ServerOperation lock = (arg) -> lock(arg);
-			ServerOperation push = (arg) -> push(arg);
-
-			fnList.put("create", create);
-			fnList.put("list", list);
-			fnList.put("syncLocalDir", syncLocalDir);
-			fnList.put("get", get);
-			fnList.put("lock", lock);
-			fnList.put("push", push);
-
 		if (System.getSecurityManager() == null) {
 			System.setSecurityManager(new SecurityManager());
 		}
@@ -258,9 +243,26 @@ public class Client {
 	}
 
 	private void run(String action, String argument) throws RemoteException {
-		fnList.get(action).operation(argument);
-
-
+		switch (action) {
+			case "create":
+				create(argument);
+				break;
+			case "list":
+				list();
+				break;
+			case "syncLocalDir":
+				syncLocalDir();
+				break;
+			case "get":
+				get(argument);
+				break;
+			case "lock":
+				lock(argument);
+				break;
+			case "push":
+				push(argument);
+				break;
+		}
 	}
 
 	private ServerInterface loadServerStub(String hostname){
