@@ -20,6 +20,9 @@ import java.util.UUID;
 import ca.polymtl.inf4410.tp1.shared.ServerInterface;
 
 public class Server implements ServerInterface {
+	
+	// Assuming the root directory exists (resolved by adding .empty to git)
+	static private final String ROOT_DIRECTORY = "files";
 
 	private final HashMap<String, UUID> lock;
 
@@ -75,7 +78,7 @@ public class Server implements ServerInterface {
 	 */
 	@Override
 	public Boolean create(String filename) throws RemoteException {
-		final File file = new File("./" + filename);
+		final File file = new File(ROOT_DIRECTORY + "/" + filename);
 		try {
 			return file.createNewFile();
 		}
@@ -92,7 +95,7 @@ public class Server implements ServerInterface {
 	 */
 	@Override
 	public HashMap<String, UUID> list() throws RemoteException {
-		final File directory = new File(".");
+		final File directory = new File(ROOT_DIRECTORY);
 		final String[] filenames = directory.list();
 		final HashMap<String, UUID> list = new HashMap<String, UUID>();
 		for (final String filename : filenames) {
@@ -109,7 +112,7 @@ public class Server implements ServerInterface {
 	 */
 	@Override
 	public HashMap<String, byte[]> syncLocalDir() throws RemoteException {
-		final File directory = new File(".");
+		final File directory = new File(ROOT_DIRECTORY);
 		final File[] files = directory.listFiles();
 		final HashMap<String, byte[]> list = new HashMap<String, byte[]>();
 		for (final File file : files) {
@@ -132,7 +135,7 @@ public class Server implements ServerInterface {
 	 */
 	@Override
 	public byte[] get(String filename, byte[] checksum) throws RemoteException {
-		final File file = new File("./" + filename);
+		final File file = new File(ROOT_DIRECTORY + "/" + filename);
 
 		// If file does dot exist, throw exception
 		if (!file.exists()) {
@@ -175,7 +178,7 @@ public class Server implements ServerInterface {
 	 */
 	@Override
 	public Entry<byte[], UUID> lock(String filename, UUID clientid, byte[] checksum) throws RemoteException {
-		final File file = new File("./" + filename);
+		final File file = new File(ROOT_DIRECTORY + "/" + filename);
 
 		// If file does dot exist, throw exception
 		if (!file.exists()) {
@@ -229,7 +232,7 @@ public class Server implements ServerInterface {
 	 */
 	@Override
 	public Boolean push(String filename, byte[] data, UUID clientid) throws RemoteException {
-		final File file = new File("./" + filename);
+		final File file = new File(ROOT_DIRECTORY + "/" + filename);
 
 		// If file does dot exist, throw exception
 		if (!file.exists()) {
