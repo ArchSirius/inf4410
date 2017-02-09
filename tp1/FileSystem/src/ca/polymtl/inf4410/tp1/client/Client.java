@@ -1,5 +1,6 @@
 package ca.polymtl.inf4410.tp1.client;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.Exception;
@@ -153,6 +154,10 @@ public class Client {
 			return;
 		}
 		try {
+			if (!new File(name).isFile()) {
+				Files.write(Paths.get(name), "".getBytes());
+				System.out.println("Creating file");
+			}
 			byte[] checksum = getFileChecksum(name);
 			UUID clientId = getClientId();
 			// Les données retournées par le serveur sont les données du fichier et l'id du client ayant le locké
@@ -162,10 +167,11 @@ public class Client {
 				System.out.println(name.concat(" est déjà verrouillé par ").concat(data.getValue().toString()));
 				return;
 			}
+			System.out.println(data.getKey());
 			// Si l'id retourné par le serveur est le même que l'id de l'utilisateur et
 			// que le fichier serveur est différent que le fichier local, écrire les données localement.
-			if (data != null) {
-				Files.write(Paths.get(name), data.toString().getBytes());
+			if (data.getKey() != null) {
+				Files.write(Paths.get(name), data.getKey().toString().getBytes());
 			}
 		} catch (Exception e) {
 			System.out.println("N'a pas pu lock sur le serveur le fichier ".concat(name));
@@ -183,12 +189,7 @@ public class Client {
 			return;
 		}
 		try {
-			byte[] data;
-			try {
-				data = Files.readAllBytes(Paths.get(name));
-			} catch (IOException e) {
-				System.out.println("Vous ne semblez pas avoir le fichier ".concat(name));
-			}
+			byte[] data = Files.readAllBytes(Paths.get(name));
 			UUID clientId = getClientId();
 			boolean success = distantServerStub.push(name, data, clientId);
 			if (success) {
@@ -196,7 +197,11 @@ public class Client {
 			} else {
 				System.out.println("opération refusée : vous devez verrouiller d'abord verrouiller le fichier.");
 			}
-		} catch (Exception e) {
+		}
+		catch (IOException e) {
+			System.out.println("Vous ne semblez pas avoir le fichier ".concat(name));
+		}
+		catch (Exception e) {
 			System.out.println("N'a pas pu push sur le serveur le fichier ".concat(name));
 		}
 
