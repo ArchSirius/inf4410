@@ -236,7 +236,7 @@ public class Client {
 			System.setSecurityManager(new SecurityManager());
 		}
 
-		if (distantServerHostname == null) {
+		if (distantServerHostname != null) {
 			distantServerStub = loadServerStub(distantServerHostname);
 		}
 	}
