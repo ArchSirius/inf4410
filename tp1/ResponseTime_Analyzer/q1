@@ -1,6 +1,0 @@
-- Nous pouvons voir qu'en ce qui à trait à la fonction normale, le temps pour appeler une fonction ne dépend pas de la taille des paramètres. Le temps reste environ constant en fonction de la taille des paramètres.
-  Par contre, pour ce qui est des deux autre fonctions (locale et distante), le temps croît exponentiellement avec la taille des paramètres. Ceci est dut au fait que lors de l'appel a RMI, les données doivent être sérialisé, écrites dans un socket, lue du socket et désérialisé.
-  Pour ce qui est de la fonction distante, celle-ci doit en plus envoyé les information à un serveur distant. Ceci entraine donc des délais de lattences additionnels.
-
-- Avantages Java RMI: Très simple d'utilisation. Il est possible d'envoyer des objets sur un socket sans ce soucier des détails d'implémentation. Ceci permet donc un développement plus rapide.
-- Désavantages Java RMI: Il y a des coûts additionnels à l'abstraction. Le programmeur ne contrôle pas les détails d'implémentations. Il peut donc être difficile d'effectuer des actions qui sortent de celles prescrites pas la librairie
