@@ -137,7 +137,7 @@ public class Client {
 				Files.write(Paths.get(name), data);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			System.out.println("N'a pas pu get sur le serveur le fichier ".concat(name));
 		}
 
 	}
@@ -158,7 +158,7 @@ public class Client {
 			// Les données retournées par le serveur sont les données du fichier et l'id du client ayant le locké
 			java.util.Map.Entry<byte[],UUID> data = distantServerStub.lock(name, clientId, checksum);
 			// Si l'id retourné par le serveur n'est pas le même que l'id de l'utilisateur, échec du vérouillage.
-			if (!data.getValue().equals(getClientId())) {
+			if (!data.getValue().equals(clientId)) {
 				System.out.println(name.concat(" est déjà verrouillé par ").concat(data.getValue().toString()));
 				return;
 			}
@@ -168,7 +168,7 @@ public class Client {
 				Files.write(Paths.get(name), data.toString().getBytes());
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			System.out.println("N'a pas pu lock sur le serveur le fichier ".concat(name));
 		}
 
 	}
@@ -187,7 +187,7 @@ public class Client {
 			try {
 				data = Files.readAllBytes(Paths.get(name));
 			} catch (IOException e) {
-				throw e;
+				System.out.println("Vous ne semblez pas avoir le fichier ".concat(name));
 			}
 			UUID clientId = getClientId();
 			boolean success = distantServerStub.push(name, data, clientId);
@@ -197,7 +197,7 @@ public class Client {
 				System.out.println("opération refusée : vous devez verrouiller d'abord verrouiller le fichier.");
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			System.out.println("N'a pas pu push sur le serveur le fichier ".concat(name));
 		}
 
 	}
