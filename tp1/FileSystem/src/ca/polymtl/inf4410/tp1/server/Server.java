@@ -21,6 +21,9 @@ import ca.polymtl.inf4410.tp1.shared.ServerInterface;
 
 public class Server implements ServerInterface {
 
+	// Assuming the root directory exists (resolved by adding .empty to git)
+	static private final String ROOT_DIRECTORY = "files";
+
 	private final HashMap<String, UUID> lock;
 
 	public static void main(String[] args) {
@@ -57,7 +60,7 @@ public class Server implements ServerInterface {
 
 	/*
 	 * Generates a unique identifier (UUID) for a client.
-	 * 
+	 *
 	 * @throws RemoteException RMI exception
 	 * @return unique identifier
 	 */
@@ -68,14 +71,14 @@ public class Server implements ServerInterface {
 
 	/*
 	 * Creates a new empty file if a file with specified filename does not exist.
-	 * 
+	 *
 	 * @throws RemoteException RMI exception
 	 * @param  filename name of the new file
 	 * @return          true if creation was successful, otherwise false
 	 */
 	@Override
 	public Boolean create(String filename) throws RemoteException {
-		final File file = new File("./" + filename);
+		final File file = new File(ROOT_DIRECTORY + "/" + filename);
 		try {
 			return file.createNewFile();
 		}
@@ -86,13 +89,13 @@ public class Server implements ServerInterface {
 
 	/*
 	 * Returns a list of files with respective owners, if any.
-	 * 
+	 *
 	 * @throws RemoteException RMI exception
 	 * @return Hashmap of filenames and respective owners (nullable)
 	 */
 	@Override
 	public HashMap<String, UUID> list() throws RemoteException {
-		final File directory = new File(".");
+		final File directory = new File(ROOT_DIRECTORY);
 		final String[] filenames = directory.list();
 		final HashMap<String, UUID> list = new HashMap<String, UUID>();
 		for (final String filename : filenames) {
@@ -103,18 +106,18 @@ public class Server implements ServerInterface {
 
 	/*
 	 * Sync the client directory with current files.
-	 * 
+	 *
 	 * @throws RemoteException RMI exception
 	 * @return Hashmap of filenames and files content
 	 */
 	@Override
 	public HashMap<String, byte[]> syncLocalDir() throws RemoteException {
-		final File directory = new File(".");
+		final File directory = new File(ROOT_DIRECTORY);
 		final File[] files = directory.listFiles();
 		final HashMap<String, byte[]> list = new HashMap<String, byte[]>();
 		for (final File file : files) {
 			try {
-				list.put(file.getName(), Files.readAllBytes(file.toPath()));
+				list.put(file.getName(), getBytesFromFile(file));
 			}
 			catch (final IOException e) {
 			}
@@ -124,7 +127,7 @@ public class Server implements ServerInterface {
 
 	/*
 	 * Returns specified file if checksum differs.
-	 * 
+	 *
 	 * @throws RemoteException RMI exception
 	 * @param  filename name of the file to fetch
 	 * @param  checksum checksum of the client's version of the file
@@ -132,7 +135,7 @@ public class Server implements ServerInterface {
 	 */
 	@Override
 	public byte[] get(String filename, byte[] checksum) throws RemoteException {
-		final File file = new File("./" + filename);
+		final File file = new File(ROOT_DIRECTORY + "/" + filename);
 
 		// If file does dot exist, throw exception
 		if (!file.exists()) {
@@ -142,7 +145,7 @@ public class Server implements ServerInterface {
 		// Read file content
 		final byte[] data;
 		try {
-			data = Files.readAllBytes(file.toPath());
+			data = getBytesFromFile(file);
 		}
 		catch (final IOException e) {
 			throw new RemoteException(e.getMessage());
@@ -165,7 +168,7 @@ public class Server implements ServerInterface {
 
 	/*
 	 * Locks a file from editing except from owner.
-	 * 
+	 *
 	 * @throws RemoteException RMI exception
 	 * @param  filename name of the file to fetch
 	 * @param  clientid client unique identifier
@@ -175,7 +178,7 @@ public class Server implements ServerInterface {
 	 */
 	@Override
 	public Entry<byte[], UUID> lock(String filename, UUID clientid, byte[] checksum) throws RemoteException {
-		final File file = new File("./" + filename);
+		final File file = new File(ROOT_DIRECTORY + "/" + filename);
 
 		// If file does dot exist, throw exception
 		if (!file.exists()) {
@@ -197,7 +200,7 @@ public class Server implements ServerInterface {
 		// Read file content
 		final byte[] data;
 		try {
-			data = Files.readAllBytes(file.toPath());
+			data = getBytesFromFile(file);
 		}
 		catch (final IOException e) {
 			throw new RemoteException(e.getMessage());
@@ -220,7 +223,7 @@ public class Server implements ServerInterface {
 
 	/*
 	 * Writes content to a file if it exists and client is owner.
-	 * 
+	 *
 	 * @throws RemoteException RMI exception
 	 * @param  filename name of the file to overwrite
 	 * @param  data     file content
@@ -229,7 +232,7 @@ public class Server implements ServerInterface {
 	 */
 	@Override
 	public Boolean push(String filename, byte[] data, UUID clientid) throws RemoteException {
-		final File file = new File("./" + filename);
+		final File file = new File(ROOT_DIRECTORY + "/" + filename);
 
 		// If file does dot exist, throw exception
 		if (!file.exists()) {
@@ -243,7 +246,7 @@ public class Server implements ServerInterface {
 
 		// Write content to file
 		try {
-			Files.write(file.toPath(), data, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+			putBytesToFile(file, data);
 		}
 		catch (final IOException e) {
 			throw new RemoteException(e.getMessage());
@@ -251,6 +254,35 @@ public class Server implements ServerInterface {
 
 		// Remove lock
 		lock.remove(filename);
+		return true;
+	}
+
+	/*
+	 * Reads a file's content.
+	 *
+	 * @throws IOException read error
+	 * @param  file the file to read
+	 * @return      file content
+	 */
+	private byte[] getBytesFromFile(final File file) throws IOException {
+		if (file == null) {
+			return null;
+		}
+		return Files.readAllBytes(file.toPath());
+	}
+
+	/*
+	 * Write content to a file.
+	 *
+	 * @throws IOException read error
+	 * @param  file the file to read
+	 * @return      true if write was successful, otherwise false
+	 */
+	private Boolean putBytesToFile(final File file, final byte[] data) throws IOException {
+		if (file == null) {
+			return false;
+		}
+		Files.write(file.toPath(), data, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
 		return true;
 	}
 }
