@@ -136,6 +136,8 @@ public class Client {
 			// Écrire seulement si la version serveur est différente.
 			if (data != null) {
 				Files.write(Paths.get(name), data);
+			} else {
+				System.out.println("Le fichier a jour avec celui du serveur");
 			}
 		} catch (Exception e) {
 			System.out.println("N'a pas pu get sur le serveur le fichier ".concat(name));
@@ -167,11 +169,10 @@ public class Client {
 				System.out.println(name.concat(" est déjà verrouillé par ").concat(data.getValue().toString()));
 				return;
 			}
-			System.out.println(data.getKey());
 			// Si l'id retourné par le serveur est le même que l'id de l'utilisateur et
 			// que le fichier serveur est différent que le fichier local, écrire les données localement.
 			if (data.getKey() != null) {
-				Files.write(Paths.get(name), data.getKey().toString().getBytes());
+				Files.write(Paths.get(name), data.getKey());
 			}
 		} catch (Exception e) {
 			System.out.println("N'a pas pu lock sur le serveur le fichier ".concat(name));
