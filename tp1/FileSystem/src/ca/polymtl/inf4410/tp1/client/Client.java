@@ -27,11 +27,10 @@ import ca.polymtl.inf4410.tp1.shared.ServerInterface;
 public class Client {
 
 	private ServerInterface distantServerStub = null;
-	private Map<String, ServerOperation> fnList;
 
 	public static void main(String[] args) {
 		// ***** Entrez ici l'adresse IP du serveur *****
-		String distantHostname = "132.42.42.42";
+		String distantHostname = "132.207.12.214";
 		String action = null;
 		String argument = null;
 
@@ -237,7 +236,7 @@ public class Client {
 			System.setSecurityManager(new SecurityManager());
 		}
 
-		if (distantServerHostname != null) {
+		if (distantServerHostname == null) {
 			distantServerStub = loadServerStub(distantServerHostname);
 		}
 	}
