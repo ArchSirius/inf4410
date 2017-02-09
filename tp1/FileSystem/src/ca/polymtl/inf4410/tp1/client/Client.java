@@ -71,6 +71,7 @@ public class Client {
 	 * @param nom - Le nom du fichier.
 	 */
 	private void create(String name) {
+		if (name == null) return
 		try {
 			if(distantServerStub.create(name)) {
 				System.out.println(name.concat(" ajouté."));
@@ -120,6 +121,10 @@ public class Client {
 	 * @param name - Le nom du fichier à aller chercher.
 	 */
 	private void get(String name) {
+		if (name == null) {
+			System.out.println("Vous devez specifier un nom de fichier");
+			return
+		}
 		try {
 			byte[] checksum = getFileChecksum(name);
 			byte[] data = distantServerStub.get(name, checksum);
@@ -140,6 +145,10 @@ public class Client {
 	 * @param name - Le nom du fichier à vérouiller.
 	 */
 	private void lock(String name) {
+		if (name == null) {
+			System.out.println("Vous devez specifier un nom de fichier");
+			return
+		}
 		try {
 			byte[] checksum = getFileChecksum(name);
 			UUID clientId = getClientId();
@@ -166,6 +175,10 @@ public class Client {
 	 * @param name - Nom du fichier à pousser sur le serveur
 	 */
 	private void push(String name) {
+		if (name == null) {
+			System.out.println("Vous devez specifier un nom de fichier");
+			return
+		}
 		try {
 			byte[] data;
 			try {
@@ -242,6 +255,7 @@ public class Client {
 	}
 
 	private void run(String action, String argument) throws RemoteException {
+		if (action == null) return;
 		switch (action) {
 			case "create":
 				create(argument);
