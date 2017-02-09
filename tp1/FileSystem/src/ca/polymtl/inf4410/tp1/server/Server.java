@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Map.Entry;
 import java.util.UUID;
+import javax.xml.bind.DatatypeConverter;
 
 import ca.polymtl.inf4410.tp1.shared.ServerInterface;
 
@@ -151,19 +152,15 @@ public class Server implements ServerInterface {
 			throw new RemoteException(e.getMessage());
 		}
 
-		try {
-			// Compute checksum
-			final MessageDigest md = MessageDigest.getInstance("MD5");
-			// If checksum does not differ, do not send file
-			if (md.digest(data).equals(checksum)) {
-				return null;
-			}
-			// If checksum differs, send file
-			return data;
+		// Compute checksums
+		final String serverChecksum = bytes2hexstr(md5sum(data));
+		final String clientChecksum = bytes2hexstr(checksum);
+		// If checksum does not differ, do not send file
+		if (serverChecksum.equals(clientChecksum)) {
+			return null;
 		}
-		catch (final NoSuchAlgorithmException e) {
-		}
-		return null;
+		// If checksum differs, send file
+		return data;
 	}
 
 	/*
@@ -206,19 +203,15 @@ public class Server implements ServerInterface {
 			throw new RemoteException(e.getMessage());
 		}
 
-		try {
-			// Compute checksum
-			final MessageDigest md = MessageDigest.getInstance("MD5");
-			// If checksum does not differ, do not send file
-			if (md.digest(data).equals(checksum)) {
-				return new SimpleEntry<byte[], UUID>(null, clientid);
-			}
-			// If checksum differs, send file
-			return new SimpleEntry<byte[], UUID>(data, clientid);
+		// Compute checksums
+		final String serverChecksum = bytes2hexstr(md5sum(data));
+		final String clientChecksum = bytes2hexstr(checksum);
+		// If checksum does not differ, do not send file
+		if (serverChecksum.equals(clientChecksum)) {
+			return new SimpleEntry<byte[], UUID>(null, clientid);
 		}
-		catch (final NoSuchAlgorithmException e) {
-		}
-		return null;
+		// If checksum differs, send file
+		return new SimpleEntry<byte[], UUID>(data, clientid);
 	}
 
 	/*
@@ -284,5 +277,31 @@ public class Server implements ServerInterface {
 		}
 		Files.write(file.toPath(), data, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
 		return true;
+	}
+
+	/*
+	 * Computes the MD5 checksum of a byte array.
+	 *
+	 * @param data the data to digest
+	 * @return     the MD5 checksum
+	 */
+	private byte[] md5sum(final byte[] data) {
+		try {
+			return MessageDigest.getInstance("MD5").digest(data);
+		}
+		catch (final NoSuchAlgorithmException e) {
+			// Unless MessageDigest deprecates MD5, this exception will never be thrown
+			return new byte[1];
+		}
+	}
+
+	/*
+	 * Converts a byte array to a hexadecimal string.
+	 *
+	 * @param bytes the byte array to convert
+	 * @return      the converted string
+	 */
+	private String bytes2hexstr(final byte[] bytes) {
+		return DatatypeConverter.printHexBinary(bytes);
 	}
 }
