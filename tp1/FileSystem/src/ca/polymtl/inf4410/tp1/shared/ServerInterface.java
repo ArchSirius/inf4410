@@ -12,6 +12,6 @@ public interface ServerInterface extends Remote {
 	HashMap<String, UUID> list() throws RemoteException;
 	HashMap<String, byte[]> syncLocalDir() throws RemoteException;
 	byte[] get(String filename, byte[] checksum) throws RemoteException;
-	Entry<byte[], UUID> lock(String filename, UUID clientid, String checksum) throws RemoteException;
+	Entry<byte[], UUID> lock(String filename, UUID clientid, byte[] checksum) throws RemoteException;
 	Boolean push(String filename, byte[] data, UUID clientid) throws RemoteException;
 }

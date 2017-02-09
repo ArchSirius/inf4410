@@ -174,7 +174,7 @@ public class Server implements ServerInterface {
 	 *                  and unique identifier of owner
 	 */
 	@Override
-	public Entry<byte[], UUID> lock(String filename, UUID clientid, String checksum) throws RemoteException {
+	public Entry<byte[], UUID> lock(String filename, UUID clientid, byte[] checksum) throws RemoteException {
 		final File file = new File("./" + filename);
 
 		// If file does dot exist, throw exception
