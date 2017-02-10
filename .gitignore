@@ -3,3 +3,9 @@
 .idea
 .ipynb_checkpoints
 *.ipynb
+
+*.aux
+*.log
+*.out
+*.pdf
+*.synctex.gz

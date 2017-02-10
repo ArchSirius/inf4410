@@ -12,7 +12,7 @@ Pour ce qui est de la fonction distante, celle-ci doit en plus envoyer les infor
 
 ## Question 2
 1. La classe `Server` implémente l'interface `ServerInterface`, qui dérive de l'interface `java.rmi.Remote`. Ainsi, la classe `Server` implémente un **registre RMI**.
-12. Le serveur distant (`Server`) est initialisé avec la méthode `Server.run()`.
+2. Le serveur distant (`Server`) est initialisé avec la méthode `Server.run()`.
 3. Le serveur local (`Server`) est initialisé avec la méthode `Server.run()`.
 4. Le client crée un nouvel objet `FakeServer` pour l'appel normal.
 5. Le client se connecte au **serveur local** pour l'appel RMI local avec la méthode `Client.loadServerStub()`.
