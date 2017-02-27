@@ -1,4 +1,8 @@
+import java.rmi.ConnectException;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
 public class Server implements API {
 
@@ -8,6 +12,7 @@ public class Server implements API {
 	public static void main(String[] args) {
 		if (args.length < 2) {
 			System.err.println("Too few arguments");
+			System.exit(1);
 		}
 		int capacity = 0;
 		int falseResultRate = 0;
@@ -37,7 +42,23 @@ public class Server implements API {
 	};
 
 	public void run() {
-		// TODO
+		if (System.getSecurityManager() == null) {
+			System.setSecurityManager(new SecurityManager());
+		}
+		try {
+			final API stub = (API) UnicastRemoteObject.exportObject(this, 0);
+			final Registry registry = LocateRegistry.getRegistry();
+			registry.rebind("server", stub);
+			System.out.println("Server ready.");
+		}
+		catch (final ConnectException e) {
+			System.err.println("Could not connect to RMI registry. Is rmiregistry running?");
+			System.err.println();
+			System.err.println("Error: " + e.getMessage());
+		}
+		catch (final Exception e) {
+			System.err.println("Error: " + e.getMessage());
+		}
 	};
 
 	@Override
@@ -59,7 +80,7 @@ public class Server implements API {
 	}
 
 	@Override
-	public int getCapacity() {
+	public int getCapacity() throws RemoteException {
 		return CAPACITY;
 	}
 

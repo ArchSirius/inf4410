@@ -21,5 +21,5 @@ public interface API extends Remote {
 	int pell(int operand) throws RemoteException;
 	int prime(int operand) throws RemoteException;
 	
-	int getCapacity();
+	int getCapacity() throws RemoteException;
 }
