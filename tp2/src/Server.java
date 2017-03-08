@@ -4,7 +4,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
-public class Server implements API {
+public class Server implements ServerAPI {
 
 	final int CAPACITY;
 	final int FALSE_RESULT_RATE;
@@ -46,7 +46,7 @@ public class Server implements API {
 			System.setSecurityManager(new SecurityManager());
 		}
 		try {
-			final API stub = (API) UnicastRemoteObject.exportObject(this, 0);
+			final ServerAPI stub = (ServerAPI) UnicastRemoteObject.exportObject(this, 0);
 			final Registry registry = LocateRegistry.getRegistry();
 			registry.rebind("server", stub);
 			System.out.println("Server ready.");

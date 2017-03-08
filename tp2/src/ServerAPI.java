@@ -1,7 +1,7 @@
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
-public interface API extends Remote {
+public interface ServerAPI extends Remote {
 
 	enum Operation {
 		PELL,
@@ -20,6 +20,6 @@ public interface API extends Remote {
 	};
 	int pell(int operand) throws RemoteException;
 	int prime(int operand) throws RemoteException;
-	
+
 	int getCapacity() throws RemoteException;
 }

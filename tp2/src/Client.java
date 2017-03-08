@@ -16,17 +16,17 @@ public class Client {
 
     }
 
-    private ServerInterface serverStub = null;
+    private LoadBalancerAPI serverStub = null;
 
     public Client(String hostname) {
         serverStub = loadServerStub(hostname);
     }
 
-    private ServerInterface loadServerStub(String hostname) {
-        ServerInterface stub = null;
+    private LoadBalancerAPI loadServerStub(String hostname) {
+        LoadBalancerAPI stub = null;
         try {
             Registry registry = LocateRegistry.getRegistry(hostname);
-            stub = (ServerInterface) registry.lookup("server");
+            stub = (LoadBalancerAPI) registry.lookup("server");
         } catch (RemoteException e) {
             System.err.println("Unknown remote exception: " + e.getMessage());
         } catch (NotBoundException e) {
