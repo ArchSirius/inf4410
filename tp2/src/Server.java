@@ -1,8 +1,12 @@
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.rmi.ConnectException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Properties;
 
 public class Server implements ServerAPI {
 
@@ -19,8 +23,22 @@ public class Server implements ServerAPI {
 		try {
 			capacity = Integer.parseInt(args[0]);
 			falseResultRate = Integer.parseInt(args[1]);
+
+			FileInputStream input = new FileInputStream(LoadBalancer.CONFIG_SHARED_FILE);
+			Properties prop = new Properties();
+			prop.load(input);
+			boolean securise = Boolean.parseBoolean(prop.getProperty("securise"));
+			if (securise) {
+				falseResultRate = 0;
+			}
 		}
 		catch (final NumberFormatException e) {
+			e.printStackTrace();
+			System.exit(1);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			System.exit(1);
+		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
