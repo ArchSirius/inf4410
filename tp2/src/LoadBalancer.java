@@ -168,7 +168,7 @@ public class LoadBalancer implements LoadBalancerAPI {
     private int sendInstruction(String instruction) {
         ServerAPI server = servers.get(index);
         index = (index + 1) % maxIndex;
-        String[] instructionArr = prop.getProperty("hostnames").split(" ");
+        String[] instructionArr = instruction.split(" ");
         ServerAPI.Operation operation =
                 instructionArr[0].equals("pell") ? ServerAPI.Operation.PELL : ServerAPI.Operation.PRIME;
         int operand = Integer.parseInt(instructionArr[1]);
