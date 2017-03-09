@@ -64,8 +64,8 @@ public class Server implements ServerAPI {
 			System.setSecurityManager(new SecurityManager());
 		}
 		try {
-			final ServerAPI stub = (ServerAPI) UnicastRemoteObject.exportObject(this, 0);
-			final Registry registry = LocateRegistry.getRegistry();
+			final ServerAPI stub = (ServerAPI) UnicastRemoteObject.exportObject(this, 5002); // TODO changer pr config
+			final Registry registry = LocateRegistry.getRegistry(5001);
 			registry.rebind("server", stub);
 			System.out.println("Server ready.");
 		}

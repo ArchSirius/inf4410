@@ -25,7 +25,7 @@ public class Client {
     private LoadBalancerAPI loadServerStub(String hostname) {
         LoadBalancerAPI stub = null;
         try {
-            Registry registry = LocateRegistry.getRegistry(hostname);
+            Registry registry = LocateRegistry.getRegistry(hostname, 5001);
             stub = (LoadBalancerAPI) registry.lookup("server");
         } catch (RemoteException e) {
             System.err.println("Unknown remote exception: " + e.getMessage());
