@@ -8,6 +8,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.io.InputStream;
@@ -99,7 +100,7 @@ public class LoadBalancer implements LoadBalancerAPI {
         }
         try {
             final LoadBalancerAPI stub = (LoadBalancerAPI) UnicastRemoteObject.exportObject(this, 5002);
-            final Registry registry = LocateRegistry.getRegistry(5001);
+            final Registry registry = LocateRegistry.getRegistry(5001);     // TODO put this in config file
             registry.rebind("server", stub);
             System.out.println("Load balancer ready.");
         }
@@ -118,16 +119,16 @@ public class LoadBalancer implements LoadBalancerAPI {
         List<String> instructions = loadInstructions(path);
         System.out.println(instructions);
         System.out.println(nbTries);
+        ArrayList<Integer> results = new ArrayList<>();
         for(String instruction : instructions) {
-            ArrayList<Integer> results = tryNServers(instruction);
+            ArrayList<Integer> result = tryNServers(instruction);
             try {
-                int result = determineResult(results);
-                return result;
+                results.add(determineResult(result));
             } catch (Exception e) {
                 System.err.println("Error: " + e.getMessage());
             }
         }
-        return 0;
+        return calculateResult(results);
         // For each instruction
         // Loop server instances
         // Execute operation
@@ -137,6 +138,14 @@ public class LoadBalancer implements LoadBalancerAPI {
         // If invalid, retry instruction
         // Update result
         // Send result
+    }
+
+    private int calculateResult(ArrayList<Integer> results) {
+       int total = 0;
+       for (Integer result : results) {
+           total = (total + result) % 4000;
+       }
+       return total;
     }
 
     private ArrayList<Integer> tryNServers(String instruction) {
@@ -153,17 +162,34 @@ public class LoadBalancer implements LoadBalancerAPI {
         } catch (IOException e) {
             System.err.println("Error: " + e.getMessage());
         }
-        return null;
+        return null;        // TODO Handle exception
     }
 
     private int sendInstruction(String instruction) {
-        ServerAPI server = servers[index];
+        ServerAPI server = servers.get(index);
         index = (index + 1) % maxIndex;
-        return server;
-
+        String[] instructionArr = prop.getProperty("hostnames").split(" ");
+        ServerAPI.Operation operation =
+                instructionArr[0].equals("pell") ? ServerAPI.Operation.PELL : ServerAPI.Operation.PRIME;
+        int operand = Integer.parseInt(instructionArr[1]);
+        try {
+            return server.doOperation(operation, operand);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+        return 0;       // TODO Handle exception
     }
 
     private int determineResult(ArrayList<Integer> values) throws Exception {
-        return 0;
+        if (nbTries == 1) {
+            return values.get(0);
+        }
+        Collections.sort(values);
+        if (values.get(0).equals(values.get(values.size() / 2))) {
+            return values.get(0);
+        } else if (values.get(values.size()).equals(values.get(values.size() / 2))) {
+            return values.get(values.size());
+        }
+        return -1;           // TODO handle exception
     }
 }
