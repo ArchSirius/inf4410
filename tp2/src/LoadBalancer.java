@@ -15,8 +15,8 @@ import java.io.FileInputStream;
 
 public class LoadBalancer implements LoadBalancerAPI {
 
-    final static String CONFIG_SERVER_FILE = "../config/servers.txt";
-    final static String CONFIG_SHARED_FILE = "../config/shared.txt";
+    final static String CONFIG_SERVER_FILE = "../config/servers.properties";
+    final static String CONFIG_SHARED_FILE = "../config/shared.properties";
     int nbTries;
     ArrayList<ServerAPI> servers;
     int port;
