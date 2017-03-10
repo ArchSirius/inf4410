@@ -59,7 +59,7 @@ public class Server implements ServerAPI {
 		FALSE_RESULT_RATE = falseResultRate;
 	};
 
-	public void run() {
+	private void run() {
 		if (System.getSecurityManager() == null) {
 			System.setSecurityManager(new SecurityManager());
 		}

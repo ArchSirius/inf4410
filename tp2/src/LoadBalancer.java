@@ -18,10 +18,10 @@ public class LoadBalancer implements LoadBalancerAPI {
 
     final static String CONFIG_SERVER_FILE = "../config/servers.properties";
     final static String CONFIG_SHARED_FILE = "../config/shared.properties";
+
+    final ArrayList<ServerAPI> servers;
     int nbTries;
-    ArrayList<ServerAPI> servers;
     int index;
-    int maxIndex;
     int port;
 
     public static void main(String[] args) {
@@ -35,21 +35,20 @@ public class LoadBalancer implements LoadBalancerAPI {
         initialise();
     }
 
-    private void initServerConfig(InputStream input) throws IOException {
-        Properties prop = new Properties();
-        prop.load(input);
-        String[] hostnames = prop.getProperty("hostnames").split(";");
-        maxIndex = hostnames.length;
-        for (String hostname : hostnames) {
+    private void initServerConfig(final InputStream input) throws IOException {
+        final Properties properties = new Properties();
+        properties.load(input);
+        final String[] hostnames = properties.getProperty("hostnames").split(";");
+        for (final String hostname : hostnames) {
             servers.add(loadServerStub(hostname));
         }
     }
 
-    private void initSharedConfig(InputStream input) throws IOException {
-        Properties prop = new Properties();
-        prop.load(input);
-        boolean securise = Boolean.parseBoolean(prop.getProperty("securise"));
-        nbTries = securise ? 1 : 3;
+    private void initSharedConfig(final InputStream input) throws IOException {
+        final Properties properties = new Properties();
+        properties.load(input);
+        boolean isSecurise = Boolean.parseBoolean(properties.getProperty("securise"));
+        nbTries = isSecurise ? 1 : 3;
     }
 
     private void initialise() {
@@ -62,33 +61,40 @@ public class LoadBalancer implements LoadBalancerAPI {
             // load shared properties file
             input = new FileInputStream(CONFIG_SHARED_FILE);
             initSharedConfig(input);
-
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        } finally {
+        }
+        catch (final IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+        finally
+        {
             if (input != null) {
                 try {
                     input.close();
-                } catch (IOException e) {
+                }
+                catch (final IOException e) {
                     e.printStackTrace();
                 }
             }
         }
     }
 
-    private ServerAPI loadServerStub(String hostname) {
-        System.err.println(hostname);
+    private ServerAPI loadServerStub(final String hostname) {
+        System.out.println("Connecting to " + hostname);
         ServerAPI stub = null;
         try {
             Registry registry = LocateRegistry.getRegistry(hostname, 5001);
             stub = (ServerAPI) registry.lookup("server");
             System.out.println(stub.toString());
             return stub;
-        } catch (RemoteException e) {
+        }
+        catch (final RemoteException e) {
             System.err.println("Unknown remote exception: " + e.getMessage());
-        } catch (NotBoundException e) {
+        }
+        catch (final NotBoundException e) {
             System.err.println("Erreur: Le nom '" + e.getMessage() + "' n'est pas defini dans le registre.");
-        } catch (Exception e) {
+        }
+        catch (final Exception e) {
           e.printStackTrace();
         }
         return stub;
@@ -116,15 +122,17 @@ public class LoadBalancer implements LoadBalancerAPI {
 
     @Override
     public int execute(String path) throws RemoteException {
-        List<String> instructions = loadInstructions(path);
-        System.out.println(instructions);
+        final List<String> instructions = loadInstructions(path);
+        System.out.println(instructions);	// TODO cleanup
         System.out.println(nbTries);
         ArrayList<Integer> results = new ArrayList<>();
         for(String instruction : instructions) {
             ArrayList<Integer> result = tryNServers(instruction);
             try {
                 results.add(determineResult(result));
-            } catch (Exception e) {
+            }
+            catch (final Exception e) {
+            	// TODO handle error i.e. what to do when a result cannot be determined (too many different results, not enough results, etc.)
                 System.err.println("Error: " + e.getMessage());
             }
         }
@@ -140,16 +148,16 @@ public class LoadBalancer implements LoadBalancerAPI {
         // Send result
     }
 
-    private int calculateResult(ArrayList<Integer> results) {
+    private int calculateResult(final ArrayList<Integer> results) {
        int total = 0;
-       for (Integer result : results) {
+       for (final Integer result : results) {
            total = (total + result) % 4000;
        }
        return total;
     }
 
-    private ArrayList<Integer> tryNServers(String instruction) {
-        ArrayList<Integer> results = new ArrayList<Integer>();
+    private ArrayList<Integer> tryNServers(final String instruction) {
+        final ArrayList<Integer> results = new ArrayList<Integer>();
         for(int i = 0; i < nbTries; ++i) {
             results.add(sendInstruction(instruction));
         }
@@ -158,36 +166,48 @@ public class LoadBalancer implements LoadBalancerAPI {
 
     private List<String> loadInstructions(final String path) {
         try {
-            return Files.readAllLines(Paths.get("../operations/" + path));
-        } catch (IOException e) {
+            return Files.readAllLines(Paths.get("../operations/" + path)); // TODO use static constant
+        }
+        catch (final IOException e) {
             System.err.println("Error: " + e.getMessage());
         }
         return null;        // TODO Handle exception
     }
 
-    private int sendInstruction(String instruction) {
-        ServerAPI server = servers.get(index);
-        index = (index + 1) % maxIndex;
-        String[] instructionArr = instruction.split(" ");
-        ServerAPI.Operation operation =
-                instructionArr[0].equals("pell") ? ServerAPI.Operation.PELL : ServerAPI.Operation.PRIME;
-        int operand = Integer.parseInt(instructionArr[1]);
+    private int sendInstruction(final String instruction) {
+        final ServerAPI server = servers.get(index);
+        index = (index + 1) % servers.size();
+        final String[] instructions = instruction.split(" ");
+        final ServerAPI.Operation operation;
+        switch (instructions[0]) {
+        case "pell":
+        	operation = ServerAPI.Operation.PELL;
+        	break;
+        case "prime":
+        	operation = ServerAPI.Operation.PRIME;
+        	break;
+        default:
+        	operation = null;
+        }
+        int operand = Integer.parseInt(instructions[1]);
         try {
             return server.doOperation(operation, operand);
-        } catch (RemoteException e) {
+        }
+        catch (final RemoteException e) {
             e.printStackTrace();
         }
         return 0;       // TODO Handle exception
     }
 
-    private int determineResult(ArrayList<Integer> values) throws Exception {
+    private int determineResult(final ArrayList<Integer> values) throws Exception {
         if (nbTries == 1) {
             return values.get(0);
         }
         Collections.sort(values);
         if (values.get(0).equals(values.get(values.size() / 2))) {
             return values.get(0);
-        } else if (values.get(values.size()).equals(values.get(values.size() / 2))) {
+        }
+        else if (values.get(values.size()).equals(values.get(values.size() / 2))) {
             return values.get(values.size());
         }
         return -1;           // TODO handle exception
