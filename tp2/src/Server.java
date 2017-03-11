@@ -35,6 +35,7 @@ public class Server implements ServerAPI {
 			if (securise) {
 				falseResultRate = 0;
 			}
+      System.out.println(prop.getProperty("portRMI"));
 			portRmi = Integer.parseInt(prop.getProperty("portRMI"));
 			portServer = Integer.parseInt(prop.getProperty("portServer"));
 		}
