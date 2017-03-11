@@ -62,7 +62,7 @@ public class LoadBalancer implements LoadBalancerAPI {
         boolean isSecurise = Boolean.parseBoolean(properties.getProperty("securise"));
 
         properties = new Properties();
-        Properties.load(lb);
+        properties.load(lb);
         String insecInst = properties.getProperty("nbInsecureInstance");
         int nbInsecureInstance = Integer.parseInt(insecInst);
         nbTries = isSecurise ? 1 : nbInsecureInstance;
