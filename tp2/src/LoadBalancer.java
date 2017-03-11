@@ -145,7 +145,7 @@ public class LoadBalancer implements LoadBalancerAPI {
     public int execute(String path) throws RemoteException {
         final List<String> instructions = loadInstructions(path);
         final ArrayList<Integer> results = new ArrayList<>();
-        for (int i = 0; ++i < instructions.size();) {
+        for (int i = 0; i < instructions.size(); ++i) {
             final String instruction = instructions.get(i);
             final ArrayList<Integer> result = tryNServers(instruction);
             try {
@@ -223,10 +223,10 @@ public class LoadBalancer implements LoadBalancerAPI {
             return values.get(0);
         }
         Collections.sort(values);
-        if (values.get(0) == values.get(values.size() / 2)) {
+        if (values.get(0).equals(values.get(values.size() / 2))) {
             return values.get(0);
         }
-        else if (values.get(values.size() - 1) == values.get(values.size() / 2)) {
+        else if (values.get(values.size() - 1).equals(values.get(values.size() / 2))) {
             return values.get(values.size() - 1);
         }
         throw new Exception("Could not determine result with values " + values);
