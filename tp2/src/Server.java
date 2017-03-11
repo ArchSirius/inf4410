@@ -36,6 +36,8 @@ public class Server implements ServerAPI {
 				falseResultRate = 0;
 			}
       System.out.println(prop.getProperty("portRMI"));
+			input = new FileInputStream("../config/server.properties");
+			prop.load(input);
 			portRmi = Integer.parseInt(prop.getProperty("portRMI"));
 			portServer = Integer.parseInt(prop.getProperty("portServer"));
 		}

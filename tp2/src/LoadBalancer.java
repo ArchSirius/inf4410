@@ -216,8 +216,8 @@ public class LoadBalancer implements LoadBalancerAPI {
         if (values.get(0).equals(values.get(values.size() / 2))) {
             return values.get(0);
         }
-        else if (values.get(values.size()).equals(values.get(values.size() / 2))) {
-            return values.get(values.size());
+        else if (values.get(values.size() - 1).equals(values.get(values.size() / 2))) {
+            return values.get(values.size() - 1);
         }
         return -1;           // TODO handle exception
     }
