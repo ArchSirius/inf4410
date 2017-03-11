@@ -16,13 +16,14 @@ import java.io.FileInputStream;
 
 public class LoadBalancer implements LoadBalancerAPI {
 
-    final static String CONFIG_SERVER_FILE = "../config/servers.properties";
+    final static String CONFIG_LB_FILE = "../config/loadBalancer.properties";
     final static String CONFIG_SHARED_FILE = "../config/shared.properties";
 
     final ArrayList<ServerAPI> servers;
     int nbTries;
     int index;
-    int port;
+    int portRmi;
+    int portLoadBalancer;
 
     public static void main(String[] args) {
         final LoadBalancer loadBalancer = new LoadBalancer();
@@ -35,7 +36,7 @@ public class LoadBalancer implements LoadBalancerAPI {
         initialise();
     }
 
-    private void initServerConfig(final InputStream input) throws IOException {
+    private void loadServersStub(final InputStream input) throws IOException {
         final Properties properties = new Properties();
         properties.load(input);
         final String[] hostnames = properties.getProperty("hostnames").split(";");
@@ -44,7 +45,14 @@ public class LoadBalancer implements LoadBalancerAPI {
         }
     }
 
-    private void initSharedConfig(final InputStream input) throws IOException {
+    private void initPorts(final InputStream input) throws IOException {
+        final Properties properties = new Properties();
+        properties.load(input);
+        portRmi = Integer.parseInt(properties.getProperty("portRMI"));
+        portLoadBalancer = Integer.parseInt(properties.getProperty("portLoadBalancer"));
+    }
+
+    private void initNbInstance(final InputStream input) throws IOException {
         final Properties properties = new Properties();
         properties.load(input);
         boolean isSecurise = Boolean.parseBoolean(properties.getProperty("securise"));
@@ -55,19 +63,19 @@ public class LoadBalancer implements LoadBalancerAPI {
         InputStream input = null;
         try {
             // load server properties file
-            input = new FileInputStream(CONFIG_SERVER_FILE);
-            initServerConfig(input);
+            input = new FileInputStream(CONFIG_LB_FILE);
+            loadServersStub(input);
+            initPorts(input);
 
             // load shared properties file
             input = new FileInputStream(CONFIG_SHARED_FILE);
-            initSharedConfig(input);
+            initNbInstance(input);
         }
         catch (final IOException e) {
             e.printStackTrace();
             System.exit(1);
         }
-        finally
-        {
+        finally {
             if (input != null) {
                 try {
                     input.close();
@@ -83,7 +91,7 @@ public class LoadBalancer implements LoadBalancerAPI {
         System.out.println("Connecting to " + hostname);
         ServerAPI stub = null;
         try {
-            Registry registry = LocateRegistry.getRegistry(hostname, 5001);
+            Registry registry = LocateRegistry.getRegistry(hostname, portRmi);
             stub = (ServerAPI) registry.lookup("server");
             System.out.println(stub.toString());
             return stub;
@@ -105,8 +113,8 @@ public class LoadBalancer implements LoadBalancerAPI {
             System.setSecurityManager(new SecurityManager());
         }
         try {
-            final LoadBalancerAPI stub = (LoadBalancerAPI) UnicastRemoteObject.exportObject(this, 5002);
-            final Registry registry = LocateRegistry.getRegistry(5001);     // TODO put this in config file
+            final LoadBalancerAPI stub = (LoadBalancerAPI) UnicastRemoteObject.exportObject(this, portLoadBalancer);
+            final Registry registry = LocateRegistry.getRegistry(portRmi);
             registry.rebind("server", stub);
             System.out.println("Load balancer ready.");
         }
@@ -123,8 +131,6 @@ public class LoadBalancer implements LoadBalancerAPI {
     @Override
     public int execute(String path) throws RemoteException {
         final List<String> instructions = loadInstructions(path);
-        System.out.println(instructions);	// TODO cleanup
-        System.out.println(nbTries);
         ArrayList<Integer> results = new ArrayList<>();
         for(String instruction : instructions) {
             ArrayList<Integer> result = tryNServers(instruction);
