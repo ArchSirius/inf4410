@@ -21,8 +21,8 @@ public class LoadBalancer implements LoadBalancerAPI {
 
     final ArrayList<ServerAPI> servers;
     int nbTries;
-    int index;
-    int port;
+    int serverIndex = 0;
+    int port; // TODO remove or use
 
     public static void main(String[] args) {
         final LoadBalancer loadBalancer = new LoadBalancer();
@@ -31,7 +31,6 @@ public class LoadBalancer implements LoadBalancerAPI {
 
     public LoadBalancer() {
         servers = new ArrayList<>();
-        index = 0;
         initialise();
     }
 
@@ -40,7 +39,10 @@ public class LoadBalancer implements LoadBalancerAPI {
         properties.load(input);
         final String[] hostnames = properties.getProperty("hostnames").split(";");
         for (final String hostname : hostnames) {
-            servers.add(loadServerStub(hostname));
+        	final ServerAPI stub = loadServerStub(hostname);
+        	if (stub != null) {
+        		servers.add(loadServerStub(hostname));
+        	}
         }
     }
 
@@ -66,8 +68,7 @@ public class LoadBalancer implements LoadBalancerAPI {
             e.printStackTrace();
             System.exit(1);
         }
-        finally
-        {
+        finally {
             if (input != null) {
                 try {
                     input.close();
@@ -125,7 +126,7 @@ public class LoadBalancer implements LoadBalancerAPI {
         final List<String> instructions = loadInstructions(path);
         System.out.println(instructions);	// TODO cleanup
         System.out.println(nbTries);
-        ArrayList<Integer> results = new ArrayList<>();
+        final ArrayList<Integer> results = new ArrayList<>();
         for(String instruction : instructions) {
             ArrayList<Integer> result = tryNServers(instruction);
             try {
@@ -175,19 +176,19 @@ public class LoadBalancer implements LoadBalancerAPI {
     }
 
     private int sendInstruction(final String instruction) {
-        final ServerAPI server = servers.get(index);
-        index = (index + 1) % servers.size();
+        final ServerAPI server = servers.get(serverIndex);
+        serverIndex = (serverIndex + 1) % servers.size();
         final String[] instructions = instruction.split(" ");
         final ServerAPI.Operation operation;
         switch (instructions[0]) {
-        case "pell":
-        	operation = ServerAPI.Operation.PELL;
-        	break;
-        case "prime":
-        	operation = ServerAPI.Operation.PRIME;
-        	break;
-        default:
-        	operation = null;
+        	case "pell":
+        		operation = ServerAPI.Operation.PELL;
+        		break;
+        	case "prime":
+        		operation = ServerAPI.Operation.PRIME;
+        		break;
+        	default:
+        		operation = null;
         }
         int operand = Integer.parseInt(instructions[1]);
         try {
