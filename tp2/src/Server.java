@@ -14,6 +14,7 @@ public class Server implements ServerAPI {
 	final int FALSE_RESULT_RATE;
 	final int PORT_RMI;
 	final int PORT_SERVER;
+	final static String CONFIG_SERVER_FILE = "../config/server.properties";
 
 	public static void main(String[] args) {
 		if (args.length < 2) {
@@ -35,11 +36,13 @@ public class Server implements ServerAPI {
 			if (securise) {
 				falseResultRate = 0;
 			}
-      System.out.println(prop.getProperty("portRMI"));
-			input = new FileInputStream("../config/server.properties");
+			input = new FileInputStream(CONFIG_SERVER_FILE);
+      prop = new Properties();
 			prop.load(input);
-			portRmi = Integer.parseInt(prop.getProperty("portRMI"));
-			portServer = Integer.parseInt(prop.getProperty("portServer"));
+      String parsedPort = prop.getProperty("portRMI");
+			portRmi = Integer.parseInt(parsedPort);
+      parsedPort = prop.getProperty("portServer");
+			portServer = Integer.parseInt(parsedPort);
 		}
 		catch (final NumberFormatException e) {
 			e.printStackTrace();

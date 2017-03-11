@@ -50,29 +50,38 @@ public class LoadBalancer implements LoadBalancerAPI {
     private void initPorts(final InputStream input) throws IOException {
         final Properties properties = new Properties();
         properties.load(input);
-        portRmi = Integer.parseInt(properties.getProperty("portRMI"));
-        portLoadBalancer = Integer.parseInt(properties.getProperty("portLoadBalancer"));
+        String port = properties.getProperty("portRMI");
+        portRmi = Integer.parseInt(port);
+        port = properties.getProperty("portLoadBalancer");
+        portLoadBalancer = Integer.parseInt(port);
     }
 
-    private void initNbInstance(final InputStream input) throws IOException {
-        final Properties properties = new Properties();
-        properties.load(input);
+    private void initNbInstance(final InputStream shared, final InputStream lb) throws IOException {
+        Properties properties = new Properties();
+        properties.load(shared);
         boolean isSecurise = Boolean.parseBoolean(properties.getProperty("securise"));
-        int nbInsecureInstance = Integer.parseInt(properties.getProperty("nbInsecureInstance"));
+
+        properties = new Properties();
+        Properties.load(lb);
+        String insecInst = properties.getProperty("nbInsecureInstance");
+        int nbInsecureInstance = Integer.parseInt(insecInst);
         nbTries = isSecurise ? 1 : nbInsecureInstance;
     }
 
     private void initialise() {
         InputStream input = null;
+        InputStream lbInput = null;
         try {
             // load server properties file
             input = new FileInputStream(CONFIG_LB_FILE);
             loadServersStub(input);
+            input = new FileInputStream(CONFIG_LB_FILE);
             initPorts(input);
 
             // load shared properties file
             input = new FileInputStream(CONFIG_SHARED_FILE);
-            initNbInstance(input);
+            lbInput = new FileInputStream(CONFIG_LB_FILE);
+            initNbInstance(input, lbInput);
         }
         catch (final IOException e) {
             e.printStackTrace();
@@ -82,6 +91,7 @@ public class LoadBalancer implements LoadBalancerAPI {
             if (input != null) {
                 try {
                     input.close();
+                    lbInput.close();
                 }
                 catch (final IOException e) {
                     e.printStackTrace();
