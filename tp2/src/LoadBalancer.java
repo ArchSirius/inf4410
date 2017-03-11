@@ -21,9 +21,9 @@ public class LoadBalancer implements LoadBalancerAPI {
 
     final ArrayList<ServerAPI> servers;
     int nbTries;
-    int index;
     int portRmi;
     int portLoadBalancer;
+    int serverIndex = 0;
 
     public static void main(String[] args) {
         final LoadBalancer loadBalancer = new LoadBalancer();
@@ -32,7 +32,6 @@ public class LoadBalancer implements LoadBalancerAPI {
 
     public LoadBalancer() {
         servers = new ArrayList<>();
-        index = 0;
         initialise();
     }
 
@@ -41,7 +40,10 @@ public class LoadBalancer implements LoadBalancerAPI {
         properties.load(input);
         final String[] hostnames = properties.getProperty("hostnames").split(";");
         for (final String hostname : hostnames) {
-            servers.add(loadServerStub(hostname));
+        	final ServerAPI stub = loadServerStub(hostname);
+        	if (stub != null) {
+        		servers.add(loadServerStub(hostname));
+        	}
         }
     }
 
@@ -56,7 +58,8 @@ public class LoadBalancer implements LoadBalancerAPI {
         final Properties properties = new Properties();
         properties.load(input);
         boolean isSecurise = Boolean.parseBoolean(properties.getProperty("securise"));
-        nbTries = isSecurise ? 1 : 3;
+        int nbInsecureInstance = Integer.parseInt(properties.getProperty("nbInsecureInstance"));
+        nbTries = isSecurise ? 1 : nbInsecureInstance;
     }
 
     private void initialise() {
@@ -131,7 +134,7 @@ public class LoadBalancer implements LoadBalancerAPI {
     @Override
     public int execute(String path) throws RemoteException {
         final List<String> instructions = loadInstructions(path);
-        ArrayList<Integer> results = new ArrayList<>();
+        final ArrayList<Integer> results = new ArrayList<>();
         for(String instruction : instructions) {
             ArrayList<Integer> result = tryNServers(instruction);
             try {
@@ -181,19 +184,19 @@ public class LoadBalancer implements LoadBalancerAPI {
     }
 
     private int sendInstruction(final String instruction) {
-        final ServerAPI server = servers.get(index);
-        index = (index + 1) % servers.size();
+        final ServerAPI server = servers.get(serverIndex);
+        serverIndex = (serverIndex + 1) % servers.size();
         final String[] instructions = instruction.split(" ");
         final ServerAPI.Operation operation;
         switch (instructions[0]) {
-        case "pell":
-        	operation = ServerAPI.Operation.PELL;
-        	break;
-        case "prime":
-        	operation = ServerAPI.Operation.PRIME;
-        	break;
-        default:
-        	operation = null;
+        	case "pell":
+        		operation = ServerAPI.Operation.PELL;
+        		break;
+        	case "prime":
+        		operation = ServerAPI.Operation.PRIME;
+        		break;
+        	default:
+        		operation = null;
         }
         int operand = Integer.parseInt(instructions[1]);
         try {
