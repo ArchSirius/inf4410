@@ -12,15 +12,20 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Properties;
+import java.util.Random;
 
 public class Server implements ServerAPI {
+
+	final static String CONFIG_SERVER_FILE = "../config/server.properties";
 
 	final int CAPACITY;
 	final int FALSE_RESULT_RATE;
 	final int PORT_RMI;
 	final int PORT_SERVER;
-	final static String CONFIG_SERVER_FILE = "../config/server.properties";
+	final Random random;
 
 	public static void main(String[] args) {
 		if (args.length < 2) {
@@ -77,6 +82,7 @@ public class Server implements ServerAPI {
 		FALSE_RESULT_RATE = falseResultRate;
 		PORT_RMI = portRmi;
 		PORT_SERVER = portServer;
+		random = new Random(System.nanoTime());
 	};
 
 	private void run() {
@@ -98,6 +104,35 @@ public class Server implements ServerAPI {
 			System.err.println("Error: " + e.getMessage());
 		}
 	};
+
+	@Override
+	public ArrayList<Integer> doOperations(ArrayList<String> instructions) throws RemoteException {
+		if (!accept(instructions)) {
+			throw new RemoteException("Too many operations");
+		}
+		final ArrayList<Integer> results = new ArrayList<>();
+		for (final String instruction : instructions) {
+			final String[] elements = instruction.split(" ");
+			if (elements.length < 1) {
+				throw new RemoteException("Invalid instruction " + instruction);
+			}
+			final String operation = elements[0];
+			final String[] operands = Arrays.copyOfRange(elements, 1, elements.length - 1);
+			if (operands.length < 1) {
+				throw new RemoteException("Too few arguments");
+			}
+			// From this point on, assume only one argument is used and no other operations exist
+			final int operand;
+			try {
+				operand = Integer.parseInt(operands[0]);
+			}
+			catch (final NumberFormatException e) {
+				throw new RemoteException(e.getMessage());
+			}
+			results.add(doOperation(getOperation(operation), operand));
+		}
+		return results;
+	}
 
 	/**
 	 * Calcul la valeur de pell
@@ -150,14 +185,33 @@ public class Server implements ServerAPI {
 		if (FALSE_RESULT_RATE == 100) {
 			return true;
 		}
-		return Math.random() * 100 < FALSE_RESULT_RATE;
+		return random.nextDouble() * 100 < FALSE_RESULT_RATE;
 	}
 
 	/**
-	 * Génère un nombre aléatoire entre 0 et 4000
+	 * Génère un nombre aléatoire entre 0 (inclusivement) et 4000 (exclusivement)
 	 * @return
 	 */
 	private int generateRandom4k() {
-		return (int) (Math.random() * 4000);
+		return random.nextInt(4000);
+	}
+
+	private boolean accept(final ArrayList<String> instructions) {
+		final double rejectionRate = 0.2d * (instructions.size() / CAPACITY - 1);
+		if (rejectionRate < 0 || random.nextDouble() < rejectionRate) {
+			return true;
+		}
+		return false;
+	}
+
+	private Operation getOperation(final String operation) throws RemoteException {
+		switch(operation) {
+			case "pell":
+				return Operation.PELL;
+			case "prime":
+				return Operation.PRIME;
+			default:
+				throw new RemoteException("Unsupported operation: \"" + operation + "\"");
+		}
 	}
 }
