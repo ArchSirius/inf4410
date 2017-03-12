@@ -74,9 +74,9 @@ public class LoadBalancer implements LoadBalancerAPI {
         try {
             // load server properties file
             input = new FileInputStream(CONFIG_LB_FILE);
-            loadServersStub(input);
-            input = new FileInputStream(CONFIG_LB_FILE);
             initPorts(input);
+            input = new FileInputStream(CONFIG_LB_FILE);
+            loadServersStub(input);
 
             // load shared properties file
             input = new FileInputStream(CONFIG_SHARED_FILE);
@@ -145,7 +145,7 @@ public class LoadBalancer implements LoadBalancerAPI {
     public int execute(String path) throws RemoteException {
         final List<String> instructions = loadInstructions(path);
         final ArrayList<Integer> results = new ArrayList<>();
-        for (int i = 0; i++ < instructions.size();) {
+        for (int i = 0; i < instructions.size(); ++i) {
             final String instruction = instructions.get(i);
             final ArrayList<Integer> result = tryNServers(instruction);
             try {
@@ -185,7 +185,7 @@ public class LoadBalancer implements LoadBalancerAPI {
 
     private List<String> loadInstructions(final String path) {
         try {
-            return Files.readAllLines(Paths.get("../operations/" + path)); // TODO use static constant
+            return Files.readAllLines(Paths.get("../config/operations/" + path)); // TODO use static constant
         }
         catch (final IOException e) {
             System.err.println("Error: " + e.getMessage());
@@ -223,10 +223,10 @@ public class LoadBalancer implements LoadBalancerAPI {
             return values.get(0);
         }
         Collections.sort(values);
-        if (values.get(0) == values.get(values.size() / 2)) {
+        if (values.get(0).equals(values.get(values.size() / 2))) {
             return values.get(0);
         }
-        else if (values.get(values.size() - 1) == values.get(values.size() / 2)) {
+        else if (values.get(values.size() - 1).equals(values.get(values.size() / 2))) {
             return values.get(values.size() - 1);
         }
         throw new Exception("Could not determine result with values " + values);
