@@ -48,11 +48,11 @@ public class Server implements ServerAPI {
 				falseResultRate = 0;
 			}
 			input = new FileInputStream(CONFIG_SERVER_FILE);
-      prop = new Properties();
+			prop = new Properties();
 			prop.load(input);
-      String parsedPort = prop.getProperty("portRMI");
+			String parsedPort = prop.getProperty("portRMI");
 			portRmi = Integer.parseInt(parsedPort);
-      parsedPort = prop.getProperty("portServer");
+			parsedPort = prop.getProperty("portServer");
 			portServer = Integer.parseInt(parsedPort);
 		}
 		catch (final NumberFormatException e) {
@@ -185,7 +185,7 @@ public class Server implements ServerAPI {
 		if (FALSE_RESULT_RATE == 100) {
 			return true;
 		}
-		return random.nextDouble() * 100 < FALSE_RESULT_RATE;
+		return random.nextInt(100) < FALSE_RESULT_RATE;
 	}
 
 	/**
