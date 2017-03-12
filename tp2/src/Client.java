@@ -1,3 +1,9 @@
+/**
+ * @author Samuel Lavoie-Marchildon et Samuel Rondeau
+ * @created March 12 2017
+ * @Description Application client utilisée pour envoyer un tâche au Load balancer.
+ */
+
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;

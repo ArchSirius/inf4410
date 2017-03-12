@@ -1,3 +1,9 @@
+/**
+ * @author Samuel Rondeau et Samuel Lavoie-Marchildon
+ * @created March 12 2017
+ * @Description Application serveur utilisée pour effectuer un calcul.
+ */
+
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -93,6 +99,12 @@ public class Server implements ServerAPI {
 		}
 	};
 
+	/**
+	 * Calcul la valeur de pell
+	 * @param operand Nombre sur lequel la valeur de pell est calculé
+	 * @return Le nombre de pell ou une valeur aléatoire
+	 * @throws RemoteException
+	 */
 	@Override
 	public int pell(final int operand) throws RemoteException {
 		if (isError()) {
@@ -102,6 +114,12 @@ public class Server implements ServerAPI {
 		return Operations.pell(operand);
 	}
 
+	/**
+	 * Calcule le prochain nombre premier
+	 * @param operand Nombre sur lequel prime est calculé
+	 * @return Prime ou une valeur aléatoire
+	 * @throws RemoteException
+	 */
 	@Override
 	public int prime(final int operand) throws RemoteException {
 		if (isError()) {
@@ -111,11 +129,20 @@ public class Server implements ServerAPI {
 		return Operations.prime(operand);
 	}
 
+	/**
+	 * Retourne la capacité du serveur
+	 * @return
+	 * @throws RemoteException
+	 */
 	@Override
 	public int getCapacity() throws RemoteException {
 		return CAPACITY;
 	}
 
+	/**
+	 * Détermine si le réseau doit renvoyer une erreur
+	 * @return
+	 */
 	private boolean isError() {
 		if (FALSE_RESULT_RATE == 0) {
 			return false;
@@ -126,6 +153,10 @@ public class Server implements ServerAPI {
 		return Math.random() * 100 < FALSE_RESULT_RATE;
 	}
 
+	/**
+	 * Génère un nombre aléatoire entre 0 et 4000
+	 * @return
+	 */
 	private int generateRandom4k() {
 		return (int) (Math.random() * 4000);
 	}

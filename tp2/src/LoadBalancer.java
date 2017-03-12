@@ -1,3 +1,9 @@
+/**
+ * @author Samuel Lavoie-Marchildon et Samuel Rondeau
+ * @created March 12 2017
+ * @Description Application LoadBalancer utilisée pour distribuer les charges aux serveurs
+ */
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -18,6 +24,7 @@ public class LoadBalancer implements LoadBalancerAPI {
 
     final static String CONFIG_LB_FILE = "../config/loadBalancer.properties";
     final static String CONFIG_SHARED_FILE = "../config/shared.properties";
+    final static String OPERATIONS_PATH = "../config/operations/";
 
     final ArrayList<ServerAPI> servers;
     int nbTries;
@@ -35,6 +42,11 @@ public class LoadBalancer implements LoadBalancerAPI {
         initialise();
     }
 
+    /**
+     * Load the servers specified inside the properties file.
+     * @param input Input stream used to gather properties
+     * @throws IOException
+     */
     private void loadServersStub(final InputStream input) throws IOException {
         final Properties properties = new Properties();
         properties.load(input);
@@ -47,6 +59,11 @@ public class LoadBalancer implements LoadBalancerAPI {
         }
     }
 
+    /**
+     * Gather the ports specified inside the properties file.
+     * @param input Input stream used to gather properties
+     * @throws IOException
+     */
     private void initPorts(final InputStream input) throws IOException {
         final Properties properties = new Properties();
         properties.load(input);
@@ -56,6 +73,12 @@ public class LoadBalancer implements LoadBalancerAPI {
         portLoadBalancer = Integer.parseInt(port);
     }
 
+    /**
+     * Specify the number of instance to send the job specified inside the properties file.
+     * @param shared Input stream used to gather the shared properties
+     * @param lb Input stream used to gather the load balancer properties
+     * @throws IOException
+     */
     private void initNbInstance(final InputStream shared, final InputStream lb) throws IOException {
         Properties properties = new Properties();
         properties.load(shared);
@@ -68,6 +91,9 @@ public class LoadBalancer implements LoadBalancerAPI {
         nbTries = isSecurise ? 1 : nbInsecureInstance;
     }
 
+    /**
+     * Initialise the load balancer using the params specified in the config files
+     */
     private void initialise() {
         InputStream input = null;
         InputStream lbInput = null;
@@ -100,6 +126,11 @@ public class LoadBalancer implements LoadBalancerAPI {
         }
     }
 
+    /**
+     * Load a server stub
+     * @param hostname The address of the server
+     * @return
+     */
     private ServerAPI loadServerStub(final String hostname) {
         System.out.println("Connecting to " + hostname);
         ServerAPI stub = null;
@@ -141,9 +172,15 @@ public class LoadBalancer implements LoadBalancerAPI {
         }
     }
 
+    /**
+     * Execute the operations specified in the file
+     * @param operationsFile Name of the operation file.
+     * @return The result from the servers
+     * @throws RemoteException
+     */
     @Override
-    public int execute(String path) throws RemoteException {
-        final List<String> instructions = loadInstructions(path);
+    public int execute(String operationsFile) throws RemoteException {
+        final List<String> instructions = loadInstructions(operationsFile);
         final ArrayList<Integer> results = new ArrayList<>();
         for (int i = 0; i < instructions.size(); ++i) {
             final String instruction = instructions.get(i);
@@ -167,6 +204,11 @@ public class LoadBalancer implements LoadBalancerAPI {
         // Send result
     }
 
+    /**
+     * Add all the results from the servers in order to produce the return value
+     * @param results
+     * @return the final result to return to the client
+     */
     private int calculateResult(final ArrayList<Integer> results) {
        int total = 0;
        for (final Integer result : results) {
@@ -175,6 +217,11 @@ public class LoadBalancer implements LoadBalancerAPI {
        return total;
     }
 
+    /**
+     * Try N servers, where N is the amount of server specified when the operations can be insecure.
+     * @param instruction Instruction to send to a server
+     * @return
+     */
     private ArrayList<Integer> tryNServers(final String instruction) {
         final ArrayList<Integer> results = new ArrayList<Integer>();
         for(int i = 0; i < nbTries; ++i) {
@@ -183,9 +230,14 @@ public class LoadBalancer implements LoadBalancerAPI {
         return results;
     }
 
-    private List<String> loadInstructions(final String path) {
+    /**
+     * Load the instructions from the instruction file.
+     * @param operationsFile Name of the operations file
+     * @return Return A list of operation
+     */
+    private List<String> loadInstructions(final String operationsFile) {
         try {
-            return Files.readAllLines(Paths.get("../config/operations/" + path)); // TODO use static constant
+            return Files.readAllLines(Paths.get(OPERATIONS_PATH + operationsFile));
         }
         catch (final IOException e) {
             System.err.println("Error: " + e.getMessage());
@@ -193,6 +245,11 @@ public class LoadBalancer implements LoadBalancerAPI {
         return null;        // TODO Handle exception
     }
 
+    /**
+     * Send an instruction to the server
+     * @param instruction Representation of the Operation Operand
+     * @return The value returned from the server
+     */
     private int sendInstruction(final String instruction) {
         final ServerAPI server = servers.get(serverIndex);
         serverIndex = (serverIndex + 1) % servers.size();
@@ -218,6 +275,12 @@ public class LoadBalancer implements LoadBalancerAPI {
         return 0;       // TODO Handle exception
     }
 
+    /**
+     * Determine what is the good result from the servers if they return differents values.
+     * @param values A list of results from N servers
+     * @return The good result
+     * @throws Exception
+     */
     private int determineResult(final ArrayList<Integer> values) throws Exception {
         if (nbTries == 1) {
             return values.get(0);
