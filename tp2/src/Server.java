@@ -58,10 +58,12 @@ public class Server implements ServerAPI {
 		catch (final NumberFormatException e) {
 			e.printStackTrace();
 			System.exit(1);
-		} catch (FileNotFoundException e) {
+		}
+		catch (final FileNotFoundException e) {
 			e.printStackTrace();
 			System.exit(1);
-		} catch (IOException e) {
+		}
+		catch (final IOException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}

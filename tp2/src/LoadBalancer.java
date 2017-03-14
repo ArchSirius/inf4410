@@ -233,7 +233,7 @@ public class LoadBalancer implements LoadBalancerAPI {
 						final ArrayList<String> taskBlock = new ArrayList<>();
 						int offset;
 						for (offset = 0; offset < blockSize && head + offset < results.size(); ++offset) {
-							taskBlock.add(results.get(offset).getKey());
+							taskBlock.add(results.get(head + offset).getKey());
 						}
 						// Send task block and save result
 						try {
@@ -244,7 +244,7 @@ public class LoadBalancer implements LoadBalancerAPI {
 							}
 
 							// Update head
-							head += offset;
+							head += resultBlock.size();
 							++successProcessedBlocks;
 							// Increment block size every SUCCESS_BLOCK_INCREMENT successful blocks
 							if (successProcessedBlocks % SUCCESS_BLOCK_INCREMENT == 0) {
