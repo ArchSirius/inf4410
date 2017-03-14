@@ -226,21 +226,21 @@ public class LoadBalancer implements LoadBalancerAPI {
 						unregisterServer(server);
 						return;
 					}
-					try {
-						int head = 0;
-						// Send all instructions
-						while (head < results.size()) {
-							// Build task block
-							final ArrayList<String> taskBlock = new ArrayList<>();
-							int offset;
-							for (offset = 0; offset < blockSize && head < results.size(); ++offset) {
-								taskBlock.add(results.get(offset).getKey());
-								++head;
-							}
-							// Send task block and save result
+					int head = 0;
+					// Send all instructions
+					while (head < results.size()) {
+						// Build task block
+						final ArrayList<String> taskBlock = new ArrayList<>();
+						int offset;
+						for (offset = 0; offset < blockSize && head + offset < results.size(); ++offset) {
+							taskBlock.add(results.get(offset).getKey());
+						}
+						// Send task block and save result
+						try {
 							final ArrayList<Integer> resultBlock = server.doOperations(taskBlock);
+							int iRes = 0;
 							for (final Integer result : resultBlock) {
-								results.get(head + offset).getValue().add(result);
+								results.get(head + iRes++).getValue().add(result);
 							}
 
 							// Update head
@@ -251,12 +251,12 @@ public class LoadBalancer implements LoadBalancerAPI {
 								++blockSize;
 							}
 						}
-					}
-					catch (final RemoteException e) {
-						// Decrement block size
-						successProcessedBlocks = 0;
-						if (blockSize > 1) {
-							--blockSize;
+						catch (final RemoteException e) {
+							// Decrement block size
+							successProcessedBlocks = 0;
+							if (blockSize > 1) {
+								--blockSize;
+							}
 						}
 					}
 				}

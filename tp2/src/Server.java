@@ -117,7 +117,7 @@ public class Server implements ServerAPI {
 				throw new RemoteException("Invalid instruction " + instruction);
 			}
 			final String operation = elements[0];
-			final String[] operands = Arrays.copyOfRange(elements, 1, elements.length - 1);
+			final String[] operands = Arrays.copyOfRange(elements, 1, elements.length);
 			if (operands.length < 1) {
 				throw new RemoteException("Too few arguments");
 			}
@@ -197,8 +197,8 @@ public class Server implements ServerAPI {
 	}
 
 	private boolean accept(final ArrayList<String> instructions) {
-		final double rejectionRate = 0.2d * (instructions.size() / CAPACITY - 1);
-		if (rejectionRate < 0 || random.nextDouble() < rejectionRate) {
+		final double rejectionRate = 0.2d * ((double) instructions.size() / CAPACITY - 1.0d);
+		if (rejectionRate <= 0 || random.nextDouble() < rejectionRate) {
 			return true;
 		}
 		return false;
