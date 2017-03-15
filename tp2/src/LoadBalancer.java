@@ -50,7 +50,7 @@ public class LoadBalancer implements LoadBalancerAPI {
 			isSecure = getSecureModeFromConfig();
 		}
 		catch (final IOException | NumberFormatException e) {
-			System.err.println("Could not initialize RMI port: " + e.getMessage());
+			System.err.println("Could not read config file: " + e.getMessage());
 			System.exit(1);
 		}
 		this.portRmi = portRmi;
@@ -76,7 +76,7 @@ public class LoadBalancer implements LoadBalancerAPI {
 			System.exit(1);
 		}
 		catch (final RemoteException e) {
-			System.err.println("Error: " + e.getMessage());
+			System.err.println(e.getMessage());
 			System.exit(1);
 		}
 	}
@@ -151,7 +151,7 @@ public class LoadBalancer implements LoadBalancerAPI {
 		input.close();
 		return Boolean.parseBoolean(properties.getProperty("securise"));
 	}
-	
+
 	private String[] getHostnamesFromConfig() throws IOException {
 		final InputStream input = new FileInputStream(CONFIG_LB_FILE);
 		final Properties properties = new Properties();
@@ -266,11 +266,11 @@ public class LoadBalancer implements LoadBalancerAPI {
 	 * @return the final result to return to the client
 	 */
 	private int computeResult(final ArrayList<Integer> results) {
-	   int total = 0;
-	   for (final Integer result : results) {
-		   total = (total + result) % 4000;
-	   }
-	   return total;
+		int total = 0;
+		for (final Integer result : results) {
+			total = (total + result) % 4000;
+		}
+		return total;
 	}
 
 	private ArrayList<Map.Entry<String, ArrayList<Integer>>> initializeResultsContainer(

@@ -7,6 +7,7 @@
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.rmi.ConnectException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -20,70 +21,56 @@ import java.util.Random;
 public class Server implements ServerAPI {
 
 	final static String CONFIG_SERVER_FILE = "../config/server.properties";
+	final static String CONFIG_SHARED_FILE = LoadBalancer.CONFIG_SHARED_FILE;
 
-	final int CAPACITY;
-	final int FALSE_RESULT_RATE;
-	final int PORT_RMI;
-	final int PORT_SERVER;
+	final int portRmi;
+	final int portServer;
+	final int capacity;
+	int falseResultRate;
 	final Random random;
 
 	public static void main(String[] args) {
 		if (args.length < 2) {
-			System.err.println("Too few arguments");
+			System.err.println("Too few arguments.");
 			System.exit(1);
 		}
 		int capacity = 0;
 		int falseResultRate = 0;
-		int portRmi = 0;
-		int portServer = 0;
 		try {
 			capacity = Integer.parseInt(args[0]);
 			falseResultRate = Integer.parseInt(args[1]);
-
-			FileInputStream input = new FileInputStream(LoadBalancer.CONFIG_SHARED_FILE);
-			Properties prop = new Properties();
-			prop.load(input);
-			boolean securise = Boolean.parseBoolean(prop.getProperty("securise"));
-			if (securise) {
-				falseResultRate = 0;
-			}
-			input = new FileInputStream(CONFIG_SERVER_FILE);
-			prop = new Properties();
-			prop.load(input);
-			String parsedPort = prop.getProperty("portRMI");
-			portRmi = Integer.parseInt(parsedPort);
-			parsedPort = prop.getProperty("portServer");
-			portServer = Integer.parseInt(parsedPort);
 		}
 		catch (final NumberFormatException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		catch (final FileNotFoundException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-		catch (final IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-		final Server server = new Server(capacity, falseResultRate, portRmi, portServer);
+		final Server server = new Server(capacity, falseResultRate);
 		server.run();
 	}
 
-	public Server(final int capacity, final int falseResultRate, final int portRmi, final int portServer) {
-		if (capacity < 0) {
-			System.err.println("Invalid capacity");
+	public Server(final int capacity, final int falseResultRate) {
+		if (capacity < 1) {
+			System.out.println("Invalid capacity. Assuming 1.");
+			this.capacity = 1;
+		}
+		else {
+			this.capacity = capacity;
+		}
+		int portRmi = 0;
+		int portServer = 0;
+		boolean isSecure = false;
+		try {
+			portRmi = getRmiPortFromConfig();
+			portServer = getLbPortFromConfig();
+			isSecure = getSecureModeFromConfig();
+		}
+		catch (final IOException e) {
+			System.err.println("Could not read config file: " + e.getMessage());
 			System.exit(1);
 		}
-		if (falseResultRate < 0 || falseResultRate > 100) {
-			System.err.println("Invalid error rate");
-			System.exit(1);
-		}
-		CAPACITY = capacity;
-		FALSE_RESULT_RATE = falseResultRate;
-		PORT_RMI = portRmi;
-		PORT_SERVER = portServer;
+		setFalseRate(falseResultRate, isSecure);
+		this.portRmi = portRmi;
+		this.portServer = portServer;
 		random = new Random(System.nanoTime());
 	};
 
@@ -92,20 +79,60 @@ public class Server implements ServerAPI {
 			System.setSecurityManager(new SecurityManager());
 		}
 		try {
-			final ServerAPI stub = (ServerAPI) UnicastRemoteObject.exportObject(this, PORT_SERVER);
-			final Registry registry = LocateRegistry.getRegistry(PORT_RMI);
-			registry.rebind("server", stub);
+			final ServerAPI stub = (ServerAPI)
+					UnicastRemoteObject.exportObject(this, portServer);
+			LocateRegistry.getRegistry(portRmi)
+					.rebind("server", stub);
 			System.out.println("Server ready.");
 		}
 		catch (final ConnectException e) {
 			System.err.println("Could not connect to RMI registry. Is rmiregistry running?");
-			System.err.println();
-			System.err.println("Error: " + e.getMessage());
+			System.err.println(e.getMessage());
+			System.exit(1);
 		}
-		catch (final Exception e) {
-			System.err.println("Error: " + e.getMessage());
+		catch (final RemoteException e) {
+			System.err.println(e.getMessage());
+			System.exit(1);
 		}
 	};
+
+	private int getRmiPortFromConfig() throws IOException, NumberFormatException {
+		final InputStream input = new FileInputStream(CONFIG_SERVER_FILE);
+		final Properties properties = new Properties();
+		properties.load(input);
+		input.close();
+		return Integer.parseInt(properties.getProperty("portRMI"));
+	}
+
+	private int getLbPortFromConfig() throws IOException, NumberFormatException {
+		final InputStream input = new FileInputStream(CONFIG_SERVER_FILE);
+		final Properties properties = new Properties();
+		properties.load(input);
+		input.close();
+		return Integer.parseInt(properties.getProperty("portLoadBalancer"));
+	}
+
+	private boolean getSecureModeFromConfig() throws IOException {
+		final InputStream input = new FileInputStream(CONFIG_SHARED_FILE);
+		final Properties properties = new Properties();
+		properties.load(input);
+		input.close();
+		return Boolean.parseBoolean(properties.getProperty("securise"));
+	}
+
+	private void setFalseRate(final int falseResultRate, final boolean isSecure) {
+		if (!isSecure && (falseResultRate < 0 || falseResultRate > 100)) {
+			System.out.println("Invalid error rate. Assuming 0.");
+			this.falseResultRate = 0;
+		}
+		else if (isSecure && falseResultRate != 0) {
+			System.out.println("Safe mode enabled. Forcing false result rate to 0.");
+			this.falseResultRate = 0;
+		}
+		else {
+			this.falseResultRate = falseResultRate;
+		}
+	}
 
 	@Override
 	public ArrayList<Integer> doOperations(ArrayList<String> instructions) throws RemoteException {
@@ -173,7 +200,7 @@ public class Server implements ServerAPI {
 	 */
 	@Override
 	public int getCapacity() throws RemoteException {
-		return CAPACITY;
+		return capacity;
 	}
 
 	/**
@@ -181,13 +208,13 @@ public class Server implements ServerAPI {
 	 * @return
 	 */
 	private boolean isError() {
-		if (FALSE_RESULT_RATE == 0) {
+		if (falseResultRate == 0) {
 			return false;
 		}
-		if (FALSE_RESULT_RATE == 100) {
+		if (falseResultRate == 100) {
 			return true;
 		}
-		return random.nextInt(100) < FALSE_RESULT_RATE;
+		return random.nextInt(100) < falseResultRate;
 	}
 
 	/**
@@ -199,7 +226,7 @@ public class Server implements ServerAPI {
 	}
 
 	private boolean accept(final ArrayList<String> instructions) {
-		final double rejectionRate = 0.2d * ((double) instructions.size() / CAPACITY - 1.0d);
+		final double rejectionRate = 0.2d * ((double) instructions.size() / capacity - 1.0d);
 		if (rejectionRate <= 0 || random.nextDouble() < rejectionRate) {
 			return true;
 		}
