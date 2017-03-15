@@ -1,23 +1,19 @@
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.Map;
 
 public class ServerThread extends Thread {
 
 	final static int SUCCESS_BLOCK_INCREMENT = 5;
 
 	final ServerAPI server;
-	final ArrayList<Map.Entry<String, ArrayList<Integer>>> container;
+	final ResultsContainer container;
 	final ServerThreadCallback callback;
 	int successProcessedBlocks = 0;
 	int blockSize              = 1;
 	int head                   = 0;
 	int offset                 = 0;
 
-	public ServerThread(
-			ServerAPI server,
-			ArrayList<Map.Entry<String, ArrayList<Integer>>> container,
-			ServerThreadCallback callback) {
+	public ServerThread(final ServerAPI server, final ResultsContainer container, final ServerThreadCallback callback) {
 		this.server = server;
 		this.container = container;
 		this.callback = callback;
@@ -33,9 +29,7 @@ public class ServerThread extends Thread {
 		}
 		catch (final RemoteException e) {
 			e.printStackTrace();
-			if (callback != null) {
-				callback.onFailure(server);
-			}
+			onConnectionFailure();
 			return;
 		}
 		// Send all instructions
@@ -87,5 +81,11 @@ public class ServerThread extends Thread {
 		blockSize = 1;
 		head = 0;
 		offset = 0;
+	}
+
+	private void onConnectionFailure() {
+		if (callback != null) {
+			callback.onFailure(server);
+		}
 	}
 }

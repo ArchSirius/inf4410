@@ -12,11 +12,9 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.io.InputStream;
 import java.io.FileInputStream;
@@ -27,8 +25,7 @@ public class LoadBalancer implements LoadBalancerAPI, ServerThreadCallback {
 	final static String CONFIG_SHARED_FILE  = "../config/shared.properties";
 	final static String OPERATIONS_DIR_PATH = "../config/operations/";
 
-	final static int TIMEOUT_MS              = 10000; // 10 seconds
-	final static int SUCCESS_BLOCK_INCREMENT = 5;
+	final static int TIMEOUT_MS = 10000; // 10 seconds
 
 	final List<ServerAPI> servers = new ArrayList<>();
 	final int portRmi;
@@ -167,22 +164,28 @@ public class LoadBalancer implements LoadBalancerAPI, ServerThreadCallback {
 	 * @throws RemoteException
 	 */
 	@Override
-	public int execute(String operationsFilePath) throws RemoteException {
+	public int execute(final String operationsFilePath) throws RemoteException {
 		// Initialize results lists
-		ArrayList<Map.Entry<String, ArrayList<Integer>>> results = initializeResultsContainer(operationsFilePath);
+		ResultsContainer results = null;
+		try {
+			results = new ResultsContainer(loadInstructions(operationsFilePath));
+		}
+		catch (final IOException e) {
+			throw new RemoteException("Error loading instructions: " + e.getMessage());
+		}
 		final ArrayList<Integer> validResults = new ArrayList<>();
 		do {
 			// Send instructions to servers
 			runComputation(results);
-			final ArrayList<Map.Entry<String, ArrayList<Integer>>> invalidEntries = new ArrayList<>();
+			final ResultsContainer invalidEntries = new ResultsContainer();
 
 			// Determine result
-			for (final Map.Entry<String, ArrayList<Integer>> entry : results) {
+			for (final ResultEntry entry : results) {
 				try {
 					validResults.add(determineResult(entry.getValue()));
 				}
 				catch (final Exception e) {
-					invalidEntries.add(createEntry(entry.getKey()));
+					invalidEntries.add(entry.getKey());
 				}
 			}
 
@@ -193,11 +196,13 @@ public class LoadBalancer implements LoadBalancerAPI, ServerThreadCallback {
 		return computeResult(validResults);
 	}
 
-	private void runComputation(final ArrayList<Map.Entry<String, ArrayList<Integer>>> results) {
+	private void runComputation(final ResultsContainer container) {
 		// Create and start threads (one thread per server)
 		final ArrayList<ServerThread> serverThreads = new ArrayList<>();
+		final ArrayList<ResultsContainer> jobs = determineJobs(container);
+		int i = 0;
 		for (final ServerAPI server : servers) {
-			final ServerThread serverThread = new ServerThread(server, results, this);
+			final ServerThread serverThread = new ServerThread(server, jobs.get(i++), this);
 			serverThreads.add(serverThread);
 			serverThread.start();
 		}
@@ -211,6 +216,9 @@ public class LoadBalancer implements LoadBalancerAPI, ServerThreadCallback {
 				e.printStackTrace();
 			}
 		}
+
+		// Save results
+		syncContainer(container, jobs);
 	}
 
 	@Override
@@ -229,21 +237,6 @@ public class LoadBalancer implements LoadBalancerAPI, ServerThreadCallback {
 			total = (total + result) % 4000;
 		}
 		return total;
-	}
-
-	private ArrayList<Map.Entry<String, ArrayList<Integer>>> initializeResultsContainer(
-			final String operationsFilePath)
-			throws RemoteException {
-		final ArrayList<Map.Entry<String, ArrayList<Integer>>> container = new ArrayList<>();
-		try {
-			for (final String instruction : loadInstructions(operationsFilePath)) {
-				container.add(createEntry(instruction));
-			}
-			return container;
-		}
-		catch (final IOException e) {
-			throw new RemoteException("Error loading instructions: " + e.getMessage());
-		}
 	}
 
 	/**
@@ -279,11 +272,43 @@ public class LoadBalancer implements LoadBalancerAPI, ServerThreadCallback {
 		throw new Exception("Could not determine result with values " + values);
 	}
 
-	private Map.Entry<String, ArrayList<Integer>> createEntry(final String instruction) {
-		return new AbstractMap.SimpleEntry<>(instruction, new ArrayList<>());
-	}
-
 	private void unregisterServer(final ServerAPI server) {
 		servers.remove(server);
+	}
+
+	private ArrayList<ResultsContainer> determineJobs(final ResultsContainer container) {
+		final int nbServers = servers.size();
+		final ArrayList<ResultsContainer> jobs = new ArrayList<>();
+		if (isSecure) {
+			final int subContainerSize = container.size() / nbServers;
+			for (int i = 0; i < nbServers; ++i) {
+				final int fromIndex = i * nbServers;
+				final int toIndex = i == nbServers - 1 ? container.size() : i * subContainerSize;
+				jobs.add(container.splice(fromIndex, toIndex));
+			}
+		}
+		else {
+			for (int i = 0; i < servers.size(); ++i) {
+				jobs.add(container);
+			}
+		}
+		return jobs;
+	}
+
+	private void syncContainer(final ResultsContainer mainContainer, final ArrayList<ResultsContainer> subContainers) {
+		if (!isSecure) {
+			return;
+		}
+		int i = 0;
+		for (final ResultsContainer subContainer : subContainers) {
+			for (final ResultEntry subEntry : subContainer) {
+				try {
+					mainContainer.get(i++).setValue(subEntry.getValue());
+				}
+				catch (final IndexOutOfBoundsException e) {
+					e.printStackTrace();
+				}
+			}
+		}
 	}
 }
