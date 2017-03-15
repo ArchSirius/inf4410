@@ -5,13 +5,13 @@ public class ServerThread extends Thread {
 
 	final static int SUCCESS_BLOCK_INCREMENT = 5;
 
-	final ServerAPI server;
-	final ResultsContainer container;
-	final ServerThreadCallback callback;
-	int successProcessedBlocks = 0;
-	int blockSize              = 1;
-	int head                   = 0;
-	int offset                 = 0;
+	private final ServerAPI server;
+	private final ResultsContainer container;
+	private final ServerThreadCallback callback;
+	private int successProcessedBlocks = 0;
+	private int blockSize              = 1;
+	private int head                   = 0;
+	private int offset                 = 0;
 
 	public ServerThread(final ServerAPI server, final ResultsContainer container, final ServerThreadCallback callback) {
 		this.server = server;

@@ -25,12 +25,12 @@ public class LoadBalancer implements LoadBalancerAPI, ServerThreadCallback {
 	final static String CONFIG_SHARED_FILE  = "../config/shared.properties";
 	final static String OPERATIONS_DIR_PATH = "../config/operations/";
 
-	final static int TIMEOUT_MS = 10000; // 10 seconds
+	private final static int TIMEOUT_MS = 10000; // 10 seconds
 
-	final List<ServerAPI> servers = new ArrayList<>();
-	final int portRmi;
-	final int portLoadBalancer;
-	final boolean isSecure;
+	private final List<ServerAPI> servers = new ArrayList<>();
+	private final int portRmi;
+	private final int portLoadBalancer;
+	private final boolean isSecure;
 
 	public static void main(String[] args) {
 		final LoadBalancer loadBalancer = new LoadBalancer();

@@ -21,11 +21,11 @@ public class Server implements ServerAPI {
 	final static String CONFIG_SERVER_FILE = "../config/server.properties";
 	final static String CONFIG_SHARED_FILE = LoadBalancer.CONFIG_SHARED_FILE;
 
-	final int portRmi;
-	final int portServer;
-	final int capacity;
-	int falseResultRate;
-	final Random random;
+	private final int portRmi;
+	private final int portServer;
+	private final int capacity;
+	private int falseResultRate;
+	private final Random random;
 
 	public static void main(String[] args) {
 		if (args.length < 2) {
