@@ -62,7 +62,7 @@ public class Client {
 	private LoadBalancerAPI loadServerStub(final String hostname) {
 		try {
 			return (LoadBalancerAPI) LocateRegistry
-					.getRegistry(hostname, 5001)
+					.getRegistry(hostname, portRmi)
 					.lookup("server");
 		}
 		catch (final RemoteException e) {

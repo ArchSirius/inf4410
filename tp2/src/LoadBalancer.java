@@ -25,7 +25,8 @@ public class LoadBalancer implements LoadBalancerAPI, ServerThreadCallback {
 	final static String CONFIG_SHARED_FILE  = "../config/shared.properties";
 	final static String OPERATIONS_DIR_PATH = "../config/operations/";
 
-	private final static int TIMEOUT_MS = 10000; // 10 seconds
+	private final static int TIMEOUT_MS  = 10000; // 10 seconds
+	private final static int MAX_NB_RUNS = 300;
 
 	private final List<ServerAPI> servers = new ArrayList<>();
 	private final int portRmi;
@@ -174,6 +175,7 @@ public class LoadBalancer implements LoadBalancerAPI, ServerThreadCallback {
 			throw new RemoteException("Error loading instructions: " + e.getMessage());
 		}
 		final ArrayList<Integer> validResults = new ArrayList<>();
+		int nbRuns = 0;
 		do {
 			// Send instructions to servers
 			runComputation(results);
@@ -192,7 +194,10 @@ public class LoadBalancer implements LoadBalancerAPI, ServerThreadCallback {
 			// Retry invalid entries
 			results = invalidEntries;
 		}
-		while (!results.isEmpty());
+		while (!results.isEmpty() && nbRuns++ < MAX_NB_RUNS);
+		if (nbRuns >= MAX_NB_RUNS) {
+			throw new RemoteException("Execution loop killed.");
+		}
 		return computeResult(validResults);
 	}
 
@@ -285,7 +290,7 @@ public class LoadBalancer implements LoadBalancerAPI, ServerThreadCallback {
 			for (int i = 0; i < nbServers; ++i) {
 				final int fromIndex = i * subContainerSize;
 				final int toIndex = i == nbServers - 1 ? container.size() : (i + 1) * subContainerSize;
-				jobs.add(container.splice(fromIndex, toIndex));
+				jobs.add(container.subList(fromIndex, toIndex));
 			}
 		}
 		else {

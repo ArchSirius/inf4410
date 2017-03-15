@@ -15,11 +15,8 @@ public class ResultsContainer extends ArrayList<ResultEntry> {
 		}
 	}
 
-	public ResultsContainer(final ArrayList<ResultEntry> entries) {
-		
-	}
-
-	public ResultsContainer splice(final int fromIndex, final int toIndex)
+	@Override
+	public ResultsContainer subList(final int fromIndex, final int toIndex)
 			throws IndexOutOfBoundsException, IllegalArgumentException {
 		if (fromIndex < 0 || toIndex > size()) {
 			throw new IndexOutOfBoundsException();
