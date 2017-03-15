@@ -1,3 +1,4 @@
+package Client;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -6,6 +7,8 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.text.DecimalFormat;
 import java.util.Properties;
+
+import LoadBalancer.LoadBalancerAPI;
 
 /**
  * The client program. 
@@ -16,7 +19,7 @@ import java.util.Properties;
 public class Client {
 
 	// Configuration files
-	final static String CONFIG_LB_FILE = "../config/loadBalancer.properties";
+	public static final String CONFIG_LB_FILE = "../config/loadBalancer.properties";
 
 	// Member variables
 	private final LoadBalancerAPI serverStub;

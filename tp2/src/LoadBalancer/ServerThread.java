@@ -1,5 +1,9 @@
+package LoadBalancer;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+
+import Server.RejectedException;
+import Server.ServerAPI;
 
 /**
  * A thread in which instructions are sent to a server.
@@ -8,7 +12,7 @@ import java.util.ArrayList;
 public class ServerThread extends Thread {
 
 	// Constants
-	final static int SUCCESS_BLOCK_INCREMENT = 5;
+	public static final int SUCCESS_BLOCK_INCREMENT = 5;
 
 	// Member variables
 	private final ServerAPI server;

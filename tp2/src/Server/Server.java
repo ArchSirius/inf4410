@@ -1,3 +1,4 @@
+package Server;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,6 +11,8 @@ import java.util.Arrays;
 import java.util.Properties;
 import java.util.Random;
 
+import LoadBalancer.LoadBalancer;
+
 /**
  * The server computes tasks. 
  * In non-secure mode, it can send false results at specified rate. 
@@ -19,8 +22,8 @@ import java.util.Random;
 public class Server implements ServerAPI {
 
 	// Configuration files
-	final static String CONFIG_SERVER_FILE = "../config/server.properties";
-	final static String CONFIG_SHARED_FILE = LoadBalancer.CONFIG_SHARED_FILE;
+	public static final String CONFIG_SERVER_FILE = "../config/server.properties";
+	public static final String CONFIG_SHARED_FILE = LoadBalancer.CONFIG_SHARED_FILE;
 
 	// Member variables
 	private final int portRmi;

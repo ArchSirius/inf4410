@@ -1,3 +1,4 @@
+package Server;
 /**
  * Custom Exception for server tasks rejection.
  *

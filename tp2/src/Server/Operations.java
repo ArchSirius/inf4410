@@ -1,3 +1,4 @@
+package Server;
 /**
  * Methodes utilitaires pour effectuer les operations du TP2.
  * 

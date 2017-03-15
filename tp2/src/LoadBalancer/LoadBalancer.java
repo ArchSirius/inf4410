@@ -1,3 +1,4 @@
+package LoadBalancer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -10,6 +11,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+
+import Server.ServerAPI;
+
 import java.io.InputStream;
 import java.io.FileInputStream;
 
@@ -24,13 +28,13 @@ import java.io.FileInputStream;
 public class LoadBalancer implements LoadBalancerAPI, ServerThreadCallback {
 
 	// Configuration files and operations directory
-	final static String CONFIG_LB_FILE      = "../config/loadBalancer.properties";
-	final static String CONFIG_SHARED_FILE  = "../config/shared.properties";
-	final static String OPERATIONS_DIR_PATH = "../config/operations/";
+	public static final String CONFIG_LB_FILE      = "../config/loadBalancer.properties";
+	public static final String CONFIG_SHARED_FILE  = "../config/shared.properties";
+	public static final String OPERATIONS_DIR_PATH = "../config/operations/";
 
 	// Constants
-	private final static int TIMEOUT_MS  = 10000; // 10 seconds
-	private final static int MAX_NB_RUNS = 300;
+	private static final int TIMEOUT_MS  = 10000; // 10 seconds
+	private static final int MAX_NB_RUNS = 300;
 
 	// Member variables
 	private final List<ServerAPI> servers = new ArrayList<>();

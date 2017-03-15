@@ -1,3 +1,6 @@
+package LoadBalancer;
+import Server.ServerAPI;
+
 /**
  * A callback interface implemented by ServerThread users.
  *
