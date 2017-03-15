@@ -21,11 +21,11 @@ import java.util.Properties;
 import java.io.InputStream;
 import java.io.FileInputStream;
 
-public class LoadBalancer implements LoadBalancerAPI {
+public class LoadBalancer implements LoadBalancerAPI, ServerThreadCallback {
 
-	final static String CONFIG_LB_FILE     = "../config/loadBalancer.properties";
-	final static String CONFIG_SHARED_FILE = "../config/shared.properties";
-	final static String OPERATIONS_DIR_PATH    = "../config/operations/";
+	final static String CONFIG_LB_FILE      = "../config/loadBalancer.properties";
+	final static String CONFIG_SHARED_FILE  = "../config/shared.properties";
+	final static String OPERATIONS_DIR_PATH = "../config/operations/";
 
 	final static int TIMEOUT_MS              = 10000; // 10 seconds
 	final static int SUCCESS_BLOCK_INCREMENT = 5;
@@ -195,62 +195,15 @@ public class LoadBalancer implements LoadBalancerAPI {
 
 	private void runComputation(final ArrayList<Map.Entry<String, ArrayList<Integer>>> results) {
 		// Create and start threads (one thread per server)
-		final ArrayList<Thread> serverThreads = new ArrayList<>();
+		final ArrayList<ServerThread> serverThreads = new ArrayList<>();
 		for (final ServerAPI server : servers) {
-			final Thread serverThread = new Thread() {
-				// Server execution
-				public void run() {
-					int successProcessedBlocks = 0;
-					int blockSize = 1;
-					try {
-						blockSize = server.getCapacity();
-					}
-					catch (final RemoteException e) {
-						e.printStackTrace();
-						unregisterServer(server);
-						return;
-					}
-					int head = 0;
-					// Send all instructions
-					while (head < results.size()) {
-						// Build task block
-						final ArrayList<String> taskBlock = new ArrayList<>();
-						int offset;
-						for (offset = 0; offset < blockSize && head + offset < results.size(); ++offset) {
-							taskBlock.add(results.get(head + offset).getKey());
-						}
-						// Send task block and save result
-						try {
-							final ArrayList<Integer> resultBlock = server.doOperations(taskBlock);
-							int iRes = 0;
-							for (final Integer result : resultBlock) {
-								results.get(head + iRes++).getValue().add(result);
-							}
-
-							// Update head
-							head += resultBlock.size();
-							++successProcessedBlocks;
-							// Increment block size every SUCCESS_BLOCK_INCREMENT successful blocks
-							if (successProcessedBlocks % SUCCESS_BLOCK_INCREMENT == 0) {
-								++blockSize;
-							}
-						}
-						catch (final RemoteException e) {
-							// Decrement block size
-							successProcessedBlocks = 0;
-							if (blockSize > 1) {
-								--blockSize;
-							}
-						}
-					}
-				}
-			};
+			final ServerThread serverThread = new ServerThread(server, results, this);
 			serverThreads.add(serverThread);
 			serverThread.start();
 		}
 
 		// Wait for all threads to finish
-		for (final Thread serverThread : serverThreads) {
+		for (final ServerThread serverThread : serverThreads) {
 			try {
 				serverThread.join(TIMEOUT_MS);
 			}
@@ -258,6 +211,11 @@ public class LoadBalancer implements LoadBalancerAPI {
 				e.printStackTrace();
 			}
 		}
+	}
+
+	@Override
+	public void onFailure(ServerAPI server) {
+		unregisterServer(server);
 	}
 
 	/**
