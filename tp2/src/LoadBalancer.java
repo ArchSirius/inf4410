@@ -282,8 +282,8 @@ public class LoadBalancer implements LoadBalancerAPI, ServerThreadCallback {
 		if (isSecure) {
 			final int subContainerSize = container.size() / nbServers;
 			for (int i = 0; i < nbServers; ++i) {
-				final int fromIndex = i * nbServers;
-				final int toIndex = i == nbServers - 1 ? container.size() : i * subContainerSize;
+				final int fromIndex = i * subContainerSize;
+				final int toIndex = i == nbServers - 1 ? container.size() : (i + 1) * subContainerSize;
 				jobs.add(container.splice(fromIndex, toIndex));
 			}
 		}
