@@ -11,7 +11,6 @@ import java.rmi.ConnectException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -24,17 +23,17 @@ import java.io.FileInputStream;
 
 public class LoadBalancer implements LoadBalancerAPI {
 
-	final static String CONFIG_LB_FILE = "../config/loadBalancer.properties";
+	final static String CONFIG_LB_FILE     = "../config/loadBalancer.properties";
 	final static String CONFIG_SHARED_FILE = "../config/shared.properties";
-	final static String OPERATIONS_PATH = "../config/operations/";
+	final static String OPERATIONS_DIR_PATH    = "../config/operations/";
 
-	final static int TIMEOUT_MS = 10000; // 10 seconds
+	final static int TIMEOUT_MS              = 10000; // 10 seconds
 	final static int SUCCESS_BLOCK_INCREMENT = 5;
 
-	final ArrayList<ServerAPI> servers;
-	int portRmi;
-	int portLoadBalancer;
-	boolean isSecure = false;
+	final List<ServerAPI> servers = new ArrayList<>();
+	final int portRmi;
+	final int portLoadBalancer;
+	final boolean isSecure;
 
 	public static void main(String[] args) {
 		final LoadBalancer loadBalancer = new LoadBalancer();
@@ -42,87 +41,64 @@ public class LoadBalancer implements LoadBalancerAPI {
 	}
 
 	public LoadBalancer() {
-		servers = new ArrayList<>();
-		initialise();
+		int portRmi = 0;
+		int portLoadBalancer = 0;
+		boolean isSecure = false;
+		try {
+			portRmi = getRmiPortFromConfig();
+			portLoadBalancer = getLbPortFromConfig();
+			isSecure = getSecureModeFromConfig();
+		}
+		catch (final IOException | NumberFormatException e) {
+			System.err.println("Could not initialize RMI port: " + e.getMessage());
+			System.exit(1);
+		}
+		this.portRmi = portRmi;
+		this.portLoadBalancer = portLoadBalancer;
+		this.isSecure = isSecure;
+		initServerStubs();
 	}
 
-	/**
-	 * Load the servers specified inside the properties file.
-	 * @param input Input stream used to gather properties
-	 * @throws IOException
-	 */
-	private void loadServersStub(final InputStream input) throws IOException {
-		final Properties properties = new Properties();
-		properties.load(input);
-		final String[] hostnames = properties.getProperty("hostnames").split(";");
+	public void run() {
+		if (System.getSecurityManager() == null) {
+			System.setSecurityManager(new SecurityManager());
+		}
+		try {
+			final LoadBalancerAPI stub = (LoadBalancerAPI)
+					UnicastRemoteObject.exportObject(this, portLoadBalancer);
+			LocateRegistry.getRegistry(portRmi)
+					.rebind("server", stub);
+			System.out.println("Load balancer ready.");
+		}
+		catch (final ConnectException e) {
+			System.err.println("Could not connect to RMI registry. Is rmiregistry running?");
+			System.err.println(e.getMessage());
+			System.exit(1);
+		}
+		catch (final RemoteException e) {
+			System.err.println("Error: " + e.getMessage());
+			System.exit(1);
+		}
+	}
+
+	private void initServerStubs() {
+		String[] hostnames = null;
+		try {
+			hostnames = getHostnamesFromConfig();
+		}
+		catch (final IOException e) {
+			System.err.println("Error while loading servers configuration: " + e.getMessage());
+			System.exit(1);
+		}
+		if (hostnames == null || hostnames.length == 0) {
+			System.err.println("Warning: No servers found. Please verify your loadBalancer.properties file.");
+			return;
+		}
 		for (final String hostname : hostnames) {
 			final ServerAPI stub = loadServerStub(hostname);
 			if (stub != null) {
-				servers.add(loadServerStub(hostname));
-			}
-		}
-	}
-
-	/**
-	 * Gather the ports specified inside the properties file.
-	 * @param input Input stream used to gather properties
-	 * @throws IOException
-	 */
-	private void initPorts(final InputStream input) throws IOException {
-		final Properties properties = new Properties();
-		properties.load(input);
-		String port = properties.getProperty("portRMI");
-		portRmi = Integer.parseInt(port);
-		port = properties.getProperty("portLoadBalancer");
-		portLoadBalancer = Integer.parseInt(port);
-	}
-
-	/**
-	 * Specify the number of instance to send the job specified inside the properties file.
-	 * @param shared Input stream used to gather the shared properties
-	 * @param lb Input stream used to gather the load balancer properties
-	 * @throws IOException
-	 */
-	private void initNbInstance(final InputStream shared, final InputStream lb) throws IOException {
-		Properties properties = new Properties();
-		properties.load(shared);
-		isSecure = Boolean.parseBoolean(properties.getProperty("securise"));
-
-		properties = new Properties();
-		properties.load(lb);
-	}
-
-	/**
-	 * Initialise the load balancer using the params specified in the config files
-	 */
-	private void initialise() {
-		InputStream input = null;
-		InputStream lbInput = null;
-		try {
-			// load server properties file
-			input = new FileInputStream(CONFIG_LB_FILE);
-			initPorts(input);
-			input = new FileInputStream(CONFIG_LB_FILE);
-			loadServersStub(input);
-
-			// load shared properties file
-			input = new FileInputStream(CONFIG_SHARED_FILE);
-			lbInput = new FileInputStream(CONFIG_LB_FILE);
-			initNbInstance(input, lbInput);
-		}
-		catch (final IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-		finally {
-			if (input != null) {
-				try {
-					input.close();
-					lbInput.close();
-				}
-				catch (final IOException e) {
-					e.printStackTrace();
-				}
+				servers.add(stub);
+				System.out.println("Connected to " + hostname);
 			}
 		}
 	}
@@ -133,59 +109,67 @@ public class LoadBalancer implements LoadBalancerAPI {
 	 * @return
 	 */
 	private ServerAPI loadServerStub(final String hostname) {
-		System.out.println("Connecting to " + hostname);
-		ServerAPI stub = null;
 		try {
-			Registry registry = LocateRegistry.getRegistry(hostname, portRmi);
-			stub = (ServerAPI) registry.lookup("server");
-			System.out.println(stub.toString());
-			return stub;
+			return (ServerAPI) LocateRegistry
+					.getRegistry(hostname, portRmi)
+					.lookup("server");
 		}
 		catch (final RemoteException e) {
-			System.err.println("Unknown remote exception: " + e.getMessage());
+			System.err.println("[" + hostname + "] Remote exception: " + e.getMessage());
 		}
 		catch (final NotBoundException e) {
-			System.err.println("Erreur: Le nom '" + e.getMessage() + "' n'est pas defini dans le registre.");
+			System.err.println("No binding for server in registry: " + e.getMessage());
 		}
-		catch (final Exception e) {
-		  e.printStackTrace();
-		}
-		return stub;
+		return null;
 	}
 
-	public void run() {
-		if (System.getSecurityManager() == null) {
-			System.setSecurityManager(new SecurityManager());
-		}
-		try {
-			final LoadBalancerAPI stub = (LoadBalancerAPI) UnicastRemoteObject.exportObject(this, portLoadBalancer);
-			final Registry registry = LocateRegistry.getRegistry(portRmi);
-			registry.rebind("server", stub);
-			System.out.println("Load balancer ready.");
-		}
-		catch (final ConnectException e) {
-			System.err.println("Could not connect to RMI registry. Is rmiregistry running?");
-			System.err.println();
-			System.err.println("Error: " + e.getMessage());
-		}
-		catch (final Exception e) {
-			System.err.println("Error: " + e.getMessage());
-		}
+	private int getRmiPortFromConfig() throws IOException, NumberFormatException {
+		final InputStream input = new FileInputStream(CONFIG_LB_FILE);
+		final Properties properties = new Properties();
+		properties.load(input);
+		input.close();
+		return Integer.parseInt(properties.getProperty("portRMI"));
+	}
+
+	private int getLbPortFromConfig() throws IOException, NumberFormatException {
+		final InputStream input = new FileInputStream(CONFIG_LB_FILE);
+		final Properties properties = new Properties();
+		properties.load(input);
+		input.close();
+		return Integer.parseInt(properties.getProperty("portLoadBalancer"));
+	}
+
+	/**
+	 * Specify the number of instance to send the job specified inside the properties file.
+	 * @param shared Input stream used to gather the shared properties
+	 * @throws IOException
+	 */
+	private boolean getSecureModeFromConfig() throws IOException {
+		final InputStream input = new FileInputStream(CONFIG_SHARED_FILE);
+		final Properties properties = new Properties();
+		properties.load(input);
+		input.close();
+		return Boolean.parseBoolean(properties.getProperty("securise"));
+	}
+	
+	private String[] getHostnamesFromConfig() throws IOException {
+		final InputStream input = new FileInputStream(CONFIG_LB_FILE);
+		final Properties properties = new Properties();
+		properties.load(input);
+		input.close();
+		return properties.getProperty("hostnames").split(";");
 	}
 
 	/**
 	 * Execute the operations specified in the file
-	 * @param operationsFile Name of the operation file.
+	 * @param operationsFilePath Name of the operation file.
 	 * @return The result from the servers
 	 * @throws RemoteException
 	 */
 	@Override
-	public int execute(String operationsFile) throws RemoteException {
+	public int execute(String operationsFilePath) throws RemoteException {
 		// Initialize results lists
-		ArrayList<Map.Entry<String, ArrayList<Integer>>> results = new ArrayList<>();
-		for (final String instruction : loadInstructions(operationsFile)) {
-			results.add(createEntry(instruction));
-		}
+		ArrayList<Map.Entry<String, ArrayList<Integer>>> results = initializeResultsContainer(operationsFilePath);
 		final ArrayList<Integer> validResults = new ArrayList<>();
 		do {
 			// Send instructions to servers
@@ -289,19 +273,32 @@ public class LoadBalancer implements LoadBalancerAPI {
 	   return total;
 	}
 
+	private ArrayList<Map.Entry<String, ArrayList<Integer>>> initializeResultsContainer(
+			final String operationsFilePath)
+			throws RemoteException {
+		final ArrayList<Map.Entry<String, ArrayList<Integer>>> container = new ArrayList<>();
+		try {
+			for (final String instruction : loadInstructions(operationsFilePath)) {
+				container.add(createEntry(instruction));
+			}
+			return container;
+		}
+		catch (final IOException e) {
+			throw new RemoteException("Error loading instructions: " + e.getMessage());
+		}
+	}
+
 	/**
 	 * Load the instructions from the instruction file.
 	 * @param operationsFile Name of the operations file
 	 * @return Return A list of operation
 	 */
-	private List<String> loadInstructions(final String operationsFile) {
-		try {
-			return Files.readAllLines(Paths.get(OPERATIONS_PATH + operationsFile));
-		}
-		catch (final IOException e) {
-			System.err.println("Error: " + e.getMessage());
-		}
-		return null;        // TODO Handle exception
+	private ArrayList<String> loadInstructions(final String operationsFile) throws IOException {
+		ArrayList<String> instructions = new ArrayList<>();
+		instructions = new ArrayList<>(
+				Files.readAllLines(Paths.get(OPERATIONS_DIR_PATH + operationsFile))
+		);
+		return instructions;
 	}
 
 	/**
