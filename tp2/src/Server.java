@@ -59,7 +59,7 @@ public class Server implements ServerAPI {
 		boolean isSecure = false;
 		try {
 			portRmi = getRmiPortFromConfig();
-			portServer = getLbPortFromConfig();
+			portServer = getServerPortFromConfig();
 			isSecure = getSecureModeFromConfig();
 		}
 		catch (final IOException e) {
@@ -102,12 +102,12 @@ public class Server implements ServerAPI {
 		return Integer.parseInt(properties.getProperty("portRMI"));
 	}
 
-	private int getLbPortFromConfig() throws IOException, NumberFormatException {
+	private int getServerPortFromConfig() throws IOException, NumberFormatException {
 		final InputStream input = new FileInputStream(CONFIG_SERVER_FILE);
 		final Properties properties = new Properties();
 		properties.load(input);
 		input.close();
-		return Integer.parseInt(properties.getProperty("portLoadBalancer"));
+		return Integer.parseInt(properties.getProperty("portServer"));
 	}
 
 	private boolean getSecureModeFromConfig() throws IOException {
