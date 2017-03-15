@@ -1,9 +1,3 @@
-/**
- * @author Samuel Rondeau et Samuel Lavoie-Marchildon
- * @created March 12 2017
- * @Description Application serveur utilisée pour effectuer un calcul.
- */
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,17 +10,29 @@ import java.util.Arrays;
 import java.util.Properties;
 import java.util.Random;
 
+/**
+ * The server computes tasks. 
+ * In non-secure mode, it can send false results at specified rate. 
+ * It will reject task lists that are too big on a certain rate based on its capacity.
+ *
+ */
 public class Server implements ServerAPI {
 
+	// Configuration files
 	final static String CONFIG_SERVER_FILE = "../config/server.properties";
 	final static String CONFIG_SHARED_FILE = LoadBalancer.CONFIG_SHARED_FILE;
 
+	// Member variables
 	private final int portRmi;
 	private final int portServer;
 	private final int capacity;
 	private int falseResultRate;
 	private final Random random;
 
+	/**
+	 * Program entry point.
+	 * @param args Command-line arguments - must contain a capacity and a false result rate.
+	 */
 	public static void main(String[] args) {
 		if (args.length < 2) {
 			System.err.println("Too few arguments.");
@@ -46,6 +52,11 @@ public class Server implements ServerAPI {
 		server.run();
 	}
 
+	/**
+	 * Constructor.
+	 * @param capacity The capacity of this server.
+	 * @param falseResultRate The rate of false results in non-secure mode.
+	 */
 	public Server(final int capacity, final int falseResultRate) {
 		if (capacity < 1) {
 			System.out.println("Invalid capacity. Assuming 1.");
@@ -72,6 +83,9 @@ public class Server implements ServerAPI {
 		random = new Random(System.nanoTime());
 	};
 
+	/**
+	 * Connects Server to RMI.
+	 */
 	private void run() {
 		if (System.getSecurityManager() == null) {
 			System.setSecurityManager(new SecurityManager());
@@ -94,6 +108,12 @@ public class Server implements ServerAPI {
 		}
 	};
 
+	/**
+	 * Extracts RMI port from configuration file.
+	 * @return RMI port.
+	 * @throws IOException If an error occurred when reading from the input stream.
+	 * @throws NumberFormatException If the string does not contain a parsable integer.
+	 */
 	private int getRmiPortFromConfig() throws IOException, NumberFormatException {
 		final InputStream input = new FileInputStream(CONFIG_SERVER_FILE);
 		final Properties properties = new Properties();
@@ -102,6 +122,12 @@ public class Server implements ServerAPI {
 		return Integer.parseInt(properties.getProperty("portRMI"));
 	}
 
+	/**
+	 * Extracts Server port from configuration file.
+	 * @return Server port.
+	 * @throws IOException If an error occurred when reading from the input stream.
+	 * @throws NumberFormatException If the string does not contain a parsable integer.
+	 */
 	private int getServerPortFromConfig() throws IOException, NumberFormatException {
 		final InputStream input = new FileInputStream(CONFIG_SERVER_FILE);
 		final Properties properties = new Properties();
@@ -110,6 +136,11 @@ public class Server implements ServerAPI {
 		return Integer.parseInt(properties.getProperty("portServer"));
 	}
 
+	/**
+	 * Extracts secure mode from configuration file.
+	 * @return Secure mode.
+	 * @throws IOException If an error occurred when reading from the input stream.
+	 */
 	private boolean getSecureModeFromConfig() throws IOException {
 		final InputStream input = new FileInputStream(CONFIG_SHARED_FILE);
 		final Properties properties = new Properties();
@@ -118,6 +149,11 @@ public class Server implements ServerAPI {
 		return Boolean.parseBoolean(properties.getProperty("securise"));
 	}
 
+	/**
+	 * Sets the false result rate.
+	 * @param falseResultRate The new false result rate.
+	 * @param isSecure Whether or not secure mode is enabled.
+	 */
 	private void setFalseRate(final int falseResultRate, final boolean isSecure) {
 		if (!isSecure && (falseResultRate < 0 || falseResultRate > 100)) {
 			System.out.println("Invalid error rate. Assuming 0.");
@@ -132,10 +168,19 @@ public class Server implements ServerAPI {
 		}
 	}
 
+	/**
+	 * Computes an ArrayList of instructions and return corresponding results. 
+	 * Some results can be false based on specified rate. 
+	 * Some instructions can be rejected based on capacity and task volume.
+	 * @param instructions The instructions to compute.
+	 * @return Results.
+	 * @throws RejectedException If the instructions are rejected.
+	 * @throws RemoteException If an exception occurred.
+	 */
 	@Override
-	public ArrayList<Integer> doOperations(ArrayList<String> instructions) throws RemoteException {
+	public ArrayList<Integer> doOperations(ArrayList<String> instructions) throws RejectedException, RemoteException {
 		if (!accept(instructions)) {
-			throw new RemoteException("Too many operations");
+			throw new RejectedException("Too many operations");
 		}
 		final ArrayList<Integer> results = new ArrayList<>();
 		for (final String instruction : instructions) {
@@ -162,10 +207,10 @@ public class Server implements ServerAPI {
 	}
 
 	/**
-	 * Calcul la valeur de pell
-	 * @param operand Nombre sur lequel la valeur de pell est calculé
-	 * @return Le nombre de pell ou une valeur aléatoire
-	 * @throws RemoteException
+	 * Computes the Pell number of specified operand.
+	 * @param operand The operand used to compute the Pell number.
+	 * @return The Pell number of specified operand.
+	 * @throws RemoteException If an exception occurred.
 	 */
 	@Override
 	public int pell(final int operand) throws RemoteException {
@@ -177,10 +222,10 @@ public class Server implements ServerAPI {
 	}
 
 	/**
-	 * Calcule le prochain nombre premier
-	 * @param operand Nombre sur lequel prime est calculé
-	 * @return Prime ou une valeur aléatoire
-	 * @throws RemoteException
+	 * Computes the next prime number after specified operand.
+	 * @param operand The operand used to compute the next prime number.
+	 * @return The next prime number after specified operand.
+	 * @throws RemoteException If an exception occurred.
 	 */
 	@Override
 	public int prime(final int operand) throws RemoteException {
@@ -192,9 +237,9 @@ public class Server implements ServerAPI {
 	}
 
 	/**
-	 * Retourne la capacité du serveur
-	 * @return
-	 * @throws RemoteException
+	 * Returns server capacity.
+	 * @return Server capacity.
+	 * @throws RemoteException If an exception occurred.
 	 */
 	@Override
 	public int getCapacity() throws RemoteException {
@@ -202,8 +247,8 @@ public class Server implements ServerAPI {
 	}
 
 	/**
-	 * Détermine si le réseau doit renvoyer une erreur
-	 * @return
+	 * Determines if next operation should return a false result based on specified false result rate.
+	 * @return true if next operation should return a false result.
 	 */
 	private boolean isError() {
 		if (falseResultRate == 0) {
@@ -216,13 +261,18 @@ public class Server implements ServerAPI {
 	}
 
 	/**
-	 * Génère un nombre aléatoire entre 0 (inclusivement) et 4000 (exclusivement)
-	 * @return
+	 * Generates a random number between 0 (inclusive) and 4000 (exclusive).
+	 * @return A random number between 0 (inclusive) and 4000 (exclusive).
 	 */
 	private int generateRandom4k() {
 		return random.nextInt(4000);
 	}
 
+	/**
+	 * Determines whether the instructions are accepted or not.
+	 * @param instructions The instructions to compute.
+	 * @return true if the instructions are accepted.
+	 */
 	private boolean accept(final ArrayList<String> instructions) {
 		final double rejectionRate = 0.2d * ((double) instructions.size() / capacity - 1.0d);
 		if (rejectionRate <= 0 || random.nextDouble() < rejectionRate) {
@@ -231,6 +281,12 @@ public class Server implements ServerAPI {
 		return false;
 	}
 
+	/**
+	 * Converts a String to a safe ServerAPI.Operation.
+	 * @param operation The input String to convert.
+	 * @return The corresponding ServerAPI.Operation.
+	 * @throws RemoteException If the input String cannot be converted or if an exception occurred.
+	 */
 	private Operation getOperation(final String operation) throws RemoteException {
 		switch(operation) {
 			case "pell":

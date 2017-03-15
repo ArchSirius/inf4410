@@ -1,9 +1,3 @@
-/**
- * @author Samuel Lavoie-Marchildon et Samuel Rondeau
- * @created March 12 2017
- * @Description Application client utilisée pour envoyer un tâche au Load balancer.
- */
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,25 +7,40 @@ import java.rmi.registry.LocateRegistry;
 import java.text.DecimalFormat;
 import java.util.Properties;
 
+/**
+ * The client program. 
+ * It connects to the specified Load Balancer, 
+ * and sends a specific operation file to compute (by filename).
+ *
+ */
 public class Client {
 
+	// Configuration files
 	final static String CONFIG_LB_FILE = "../config/loadBalancer.properties";
 
+	// Member variables
 	private final LoadBalancerAPI serverStub;
 	private final int portRmi;
 
+	/**
+	 * Program entry point.
+	 * @param args Command-line arguments - must contain a Load Balancer hostname and an operation filename.
+	 */
 	public static void main(String[] args) {
 		if (args.length < 2) {
-			System.err.println("You must specify the hostname and the path name");
+			System.err.println("You must specify the hostname and the operations filename");
 			System.exit(-1);
 		}
 		final String distantHostname = args[0];
 		final String pathName = args[1];
 		final Client client = new Client(distantHostname);
 		client.run(pathName);
-
 	}
 
+	/**
+	 * Constructor.
+	 * @param hostname LoadBalancer hostname.
+	 */
 	public Client(final String hostname) {
 		int portRmi = 0;
 		try {
@@ -45,6 +54,10 @@ public class Client {
 		serverStub = loadServerStub(hostname);
 	}
 
+	/**
+	 * Connects to the Load Balancer to compute instructions.
+	 * @param pathName Operations file name.
+	 */
 	private void run(final String pathName) {
 		try {
 			final long startTime, endTime;
@@ -59,6 +72,11 @@ public class Client {
 		}
 	}
 
+	/**
+	 * Loads a LoadBalancer stub.
+	 * @param hostname The Load Balancer address.
+	 * @return LoadBalancer stub.
+	 */
 	private LoadBalancerAPI loadServerStub(final String hostname) {
 		try {
 			return (LoadBalancerAPI) LocateRegistry
@@ -76,6 +94,12 @@ public class Client {
 		return null;
 	}
 
+	/**
+	 * Extracts RMI port from configuration file.
+	 * @return RMI port.
+	 * @throws IOException If an error occurred when reading from the input stream.
+	 * @throws NumberFormatException If the string does not contain a parsable integer.
+	 */
 	private int getRmiPortFromConfig() throws IOException, NumberFormatException {
 		final InputStream input = new FileInputStream(CONFIG_LB_FILE);
 		final Properties properties = new Properties();
@@ -84,6 +108,11 @@ public class Client {
 		return Integer.parseInt(properties.getProperty("portRMI"));
 	}
 
+	/**
+	 * Converts long nanoseconds to printable String milliseconds
+	 * @param ns Nanoseconds to convert.
+	 * @return Printable milliseconds.
+	 */
 	private String formatNs2MsStr(final long ns) {
 		final DecimalFormat df = new DecimalFormat("####.000");
 		return df.format(ns / 1000000d).replaceAll(",", ".");
