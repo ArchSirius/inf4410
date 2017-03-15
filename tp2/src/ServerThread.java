@@ -28,7 +28,6 @@ public class ServerThread extends Thread {
 			blockSize = server.getCapacity();
 		}
 		catch (final RemoteException e) {
-			e.printStackTrace();
 			onConnectionFailure();
 			return;
 		}

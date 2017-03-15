@@ -223,6 +223,7 @@ public class LoadBalancer implements LoadBalancerAPI, ServerThreadCallback {
 
 	@Override
 	public void onFailure(ServerAPI server) {
+		System.err.println("Connection lost - unregistering server " + server);
 		unregisterServer(server);
 	}
 
