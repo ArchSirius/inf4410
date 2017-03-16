@@ -64,7 +64,8 @@ Les valeurs de configuration et les fichiers utilisés sont les suivants:
 * `config/loadBalancer.properties`:`hostnames` (adresses IP séparées par ';') définit le port utilisé par RMI;
 * `config/loadBalancer.properties`:`portRMI` ([1024-65536]) définit le port utilisé par RMI;
 * `config/loadBalancer.properties`:`portLoadBalancer` ([1024-65536]) définit le port sur lequel écoute le répartiteur;
-* `config/shared.properties`:`securise` (booléen) définit le mode d'exécution (sécurisé ou non sécurisé).
+* `config/shared.properties`:`securise` (booléen) définit le mode d'exécution (sécurisé ou non sécurisé);
+* `config/operations/` contient les fichiers des opérations.
 
 ### Exécution
 Le programme `LoadBalancer` ne requiert aucun argument. Il s'exécute comme suit :
@@ -83,7 +84,8 @@ Les fichiers d'opérations doivent être présents également dans le répertoir
 
 ### Configuration
 Les valeurs de configuration et les fichiers utilisés sont les suivants:
-* `config/loadBalancer.properties`:`portRMI` ([1024-65536]) définit le port utilisé par RMI du répartiteur.
+* `config/loadBalancer.properties`:`portRMI` ([1024-65536]) définit le port utilisé par RMI du répartiteur;
+* `config/operations/` contient les fichiers des opérations.
 
 ### Exécution
 Le programme `Server` nécessite deux arguments : une capacité (entier positif) et un taux d'erreurs (entier entre 0 et 100).
