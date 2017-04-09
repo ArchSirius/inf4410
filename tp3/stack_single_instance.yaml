@@ -26,13 +26,22 @@ parameters:
         description: Password must consist of characters and numbers only
       - allowed_pattern: "[A-Z]+[a-zA-Z0-9]*"
         description: Password must start with an uppercase character
-  db_port:
-    type: number
-    description: Database port number
-    default: 50000
-    constraints:
-      - range: { min: 40000, max: 60000 }
-        description: Port number must be between 40000 and 60000
+  network:
+    type: string
+    description: Reseau serveur
+    default: inf4410-net
+  server_script_url:
+    type: string
+    description: Script a etre execute sur les serveurs
+    default: https://raw.githubusercontent.com/houssemmh/INF4410-TP3/master/server.py
+  server_script_name:
+    type: string
+    description: Nom du script
+    default: server.py
+  external_network_id:
+    type: string
+    description: UUID of a Neutron external network
+    default: 0c3b1354-d3d5-4fec-86d3-19d4d1f13785
 
 resources:
   server:
@@ -42,18 +51,27 @@ resources:
       image: { get_param: image }
       flavor: { get_param: flavor }
       admin_pass: { get_param: admin_pass }
+      networks:
+        - network: { get_param: network }
       user_data_format: RAW
       user_data:
         str_replace:
           template: |
             #!/bin/bash
-            echo db_port
+            wget $script_url -O $script_name
+            python $script_name
           params:
-            db_port: { get_param: db_port }
-      networks:
-        - network: inf4410-net
+            $script_url: { get_param: server_script_url }
+            $script_name: { get_param: server_script_name }
+  floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: external_network_id }
 
 outputs:
   server_networks:
     description: The networks of the deployed server
     value: { get_attr: [server, networks] }
+  instance_ip:
+    description: The IP address of the deployed instance
+    value: { get_attr: [floating_ip, floating_ip_address] }

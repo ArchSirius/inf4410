@@ -16,29 +16,113 @@ parameters:
   subnet_id:
     type: string
     description: Sous-reseau dans lequel le load balancer sera situe
-    default: #A completer
+    default: 6579eb07-88c3-4707-9c6e-ab90a78cca02
+
+  nb_instances:
+    type: number
+    description: Nombre de serveurs a deployer
+    default: 2
+    constraints:
+      - range: { min: 1, max: 8 }
+        description: Number of instances must be between 1 and 8
+
+  server_script_url:
+    type: string
+    description: Script a etre execute sur les serveurs
+    default: https://raw.githubusercontent.com/houssemmh/INF4410-TP3/master/server.py
+
+  server_script_name:
+    type: string
+    description: Nom du script
+    default: server.py
+
+  lb_port:
+    type: number
+    description: Port du repartiteur
+    default: 8000
+    constraints:
+      - range: { min: 1, max: 65536 }
+        description: Port number must be between 1 and 65536
+
+  server_port:
+    type: number
+    description: Port du serveur
+    default: 8000
+    constraints:
+      - range: { min: 1024, max: 65536 }
+        description: Port number must be between 1024 and 65536
+
+  network:
+    type: string
+    description: Reseau serveur
+    default: inf4410-net
+
+  external_network_id:
+    type: string
+    description: UUID of a Neutron external network
+    default: 0c3b1354-d3d5-4fec-86d3-19d4d1f13785
 
 resources:
   web_nodes:
       type: OS::Heat::ResourceGroup
       properties:
-      #A completer
-
+        count: { get_param: nb_instances }
+        resource_def:
+          type: OS::Nova::Server
+          properties:
+            name: s%index%
+            image: { get_param: image }
+            flavor : { get_param: flavor }
+            security_groups:
+            - default
+            networks:
+            - network: { get_param: network }
+            user_data_format: RAW
+            user_data:
+              str_replace:
+                template: |
+                  #!/bin/bash
+                  wget $script_url -O $script_name
+                  python $script_name
+                params:
+                  $script_url: { get_param: server_script_url }
+                  $script_name: { get_param: server_script_name }
 
   pool:
       type: OS::Neutron::Pool
-      #A completer
+      properties:
+        protocol: HTTP
+        monitors: [{ get_resource: monitor }]
+        subnet_id: { get_param: subnet_id }
+        lb_method: ROUND_ROBIN
+        vip:
+          protocol_port: { get_param: server_port }
 
   lbalancer:
       type: OS::Neutron::LoadBalancer
-      #A completer
+      properties:
+        members: { get_attr: [web_nodes, refs] }
+        protocol_port: { get_param: lb_port }
+        pool_id: { get_resource: pool }
 
   monitor:
-      type: OS::Neutron::HealthMonitor
-      properties:
+    type: OS::Neutron::HealthMonitor
+    properties:
+      type: TCP
+      delay: 12
+      max_retries: 2
+      timeout: 6
 
+  lb_floating:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: external_network_id }
+      port_id: {get_attr: [pool, vip, port_id]}
 
 outputs:
   pool_ip_address:
     value: {get_attr: [pool, vip, address]}
     description: The IP address of the load balancing pool
+  lb_floating:
+    description: The floating IP address of the load balancing pool
+    value: { get_attr: [lb_floating, floating_ip_address] }
